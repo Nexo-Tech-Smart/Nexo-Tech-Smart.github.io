@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexo Tech Smart - Tienda de Tecnología</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <nav>
+        <div class="nav-container">
+            <div class="logo">Nexo Tech Smart</div>
+            <ul class="nav-links">
+                <li><a href="#inicio">Inicio</a></li>
+                <li><a href="#productos">Productos</a></li>
+                <li><a href="#contacto">Contacto</a></li>
+            </ul>
+            <button id="cartBtn" class="cart-btn">
+                🛒 <span id="cartCount">0</span>
+            </button>
+        </div>
+    </nav>
+
+    <section id="inicio" class="hero">
+        <div class="hero-content">
+            <h1>Nexo Tech Smart</h1>
+            <p>Soluciones inteligentes para tu hogar</p>
+            <a href="#productos" class="btn">Ver productos</a>
+        </div>
+    </section>
+
+    <section id="productos" class="section">
+        <div class="container">
+            <h2>Productos</h2>
+            <div id="productGrid" class="product-grid"></div>
+        </div>
+    </section>
+
+    <aside id="cartSidebar" class="cart-sidebar">
+        <div class="cart-header">
+            <h2>Carrito</h2>
+            <button id="closeCart">&times;</button>
+        </div>
+        <div id="cartItems" class="cart-items"></div>
+        <div class="cart-footer">
+            <p>Total: <span id="cartTotal">$0.00</span></p>
+            <button id="checkoutBtn" class="btn">Finalizar compra</button>
+        </div>
+    </aside>
+    <div id="cartOverlay" class="cart-overlay"></div>
+
+    <section id="contacto" class="section bg-light">
+        <div class="container">
+            <h2>Contacto</h2>
+            <form id="contactForm">
+                <input type="text" placeholder="Nombre" required>
+                <input type="email" placeholder="Correo electronico" required>
+                <textarea placeholder="Mensaje" rows="5" required></textarea>
+                <button type="submit" class="btn">Enviar mensaje</button>
+            </form>
+            <div id="formMessage" class="form-message"></div>
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2026 Nexo Tech Smart. Todos los derechos reservados.</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
