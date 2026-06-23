@@ -1,6 +1,7 @@
 let products = [];
 let cart = {};
 let activeCategory = 'Todos';
+let isDevMode = false;
 
 async function init() {
     try {
@@ -8,8 +9,8 @@ async function init() {
         products = await res.json();
     } catch {
         products = [
-            { id: 1, name: 'Hub Smart Gateway', price: 89.99, priceCRC: 8999, category: 'Hogar' },
-            { id: 2, name: 'Bombilla WiFi RGB', price: 24.99, category: 'Hogar' },
+            { id: 1, name: 'Hub Smart Gateway', price: 8999, category: 'Hogar' },
+            { id: 2, name: 'Bombilla WiFi RGB', price: 2499, category: 'Hogar' },
         ];
     }
     renderFilters();
@@ -18,6 +19,10 @@ async function init() {
 
 function formatPrice(price) {
     return '&#8353;' + Number(price).toLocaleString('es-CR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function getOriginalPrice(p) {
+    return Math.round((p.priceCRC || p.price) / 1.3 * 100) / 100;
 }
 
 function renderFilters() {
@@ -52,17 +57,52 @@ function renderProducts(search) {
         grid.innerHTML = '<p style="text-align:center;color:#999;padding:3rem">No se encontraron productos</p>';
         return;
     }
-    grid.innerHTML = list.map(p => `
-        <div class="product-card">
-            <img src="${p.img}" alt="${p.name}" loading="lazy">
-            <div class="info">
-                <h3>${p.name}</h3>
-                <p class="price">${formatPrice(p.priceCRC || p.price)}</p>
-                ${p.code ? '<small style="display:block;color:#888;font-size:0.8rem">' + p.code + '</small>' : ''}
-                <button class="btn btn-sm" onclick="addToCart(${p.id})">Agregar</button>
-            </div>
-        </div>
-    `).join('');
+    grid.innerHTML = list.map(p => {
+        const markup = p.priceCRC || p.price;
+        const original = getOriginalPrice(p);
+        const priceHtml = isDevMode
+            ? '<div class="price-dev"><span class="original">&#8353;' + original.toLocaleString('es-CR', {minimumFractionDigits:2}) + '</span> &rarr; <span class="markup">&#8353;' + markup.toLocaleString('es-CR', {minimumFractionDigits:2}) + '</span></div>'
+            : '<p class="price">' + formatPrice(markup) + '</p>';
+        return '<div class="product-card" onclick="openModal(' + p.id + ')">'
+            + '<img src="' + p.img + '" alt="' + p.name.replace(/"/g, '&quot;') + '" loading="lazy">'
+            + '<div class="info">'
+            + '<h3>' + p.name + '</h3>'
+            + priceHtml
+            + (p.code ? '<small style="display:block;color:#888;font-size:0.8rem">' + p.code + '</small>' : '')
+            + '<button class="btn btn-sm" onclick="event.stopPropagation();addToCart(' + p.id + ')">Agregar</button>'
+            + '</div></div>';
+    }).join('');
+}
+
+function openModal(id) {
+    const p = products.find(x => x.id === id);
+    if (!p) return;
+    const markup = p.priceCRC || p.price;
+    const original = getOriginalPrice(p);
+    const body = document.getElementById('modalBody');
+    body.innerHTML = '<img src="' + p.img + '" alt="' + p.name.replace(/"/g, '&quot;') + '">'
+        + '<h2>' + p.name + '</h2>'
+        + '<div class="modal-meta">'
+        + (p.brand ? '<span><strong>Marca:</strong> ' + p.brand + '</span><br>' : '')
+        + (p.code ? '<span><strong>C&oacute;digo:</strong> ' + p.code + '</span><br>' : '')
+        + '<span><strong>Categor&iacute;a:</strong> ' + p.category + '</span>'
+        + '</div>'
+        + (isDevMode
+            ? '<div class="modal-price-dev">'
+                + '<p><span class="label">Precio PlanetGroupCR (original):</span><span class="value green">&#8353;' + original.toLocaleString('es-CR', {minimumFractionDigits:2}) + '</span></p>'
+                + '<p><span class="label">Precio Nexo Tech Smart (+30%):</span><span class="value red">&#8353;' + markup.toLocaleString('es-CR', {minimumFractionDigits:2}) + '</span></p>'
+                + '<p class="diff"><span class="label">Diferencia (+30%):</span><span class="value red">&#8353;' + (markup - original).toLocaleString('es-CR', {minimumFractionDigits:2}) + '</span></p>'
+            + '</div>'
+            : '<div class="modal-price">' + formatPrice(markup) + '</div>')
+        + '<div class="modal-actions">'
+        + '<button class="btn btn-sm" onclick="closeModal();addToCart(' + p.id + ')">Agregar al carrito</button>'
+        + '<a class="btn btn-sm btn-wsp" href="https://wa.me/50685001390?text=' + encodeURIComponent('Hola, me interesa: ' + p.name + ' (' + p.code + ') - ₡' + markup.toLocaleString('es-CR', {minimumFractionDigits:2})) + '" target="_blank">Consultar por WhatsApp</a>'
+        + '</div>';
+    document.getElementById('productModal').classList.add('open');
+}
+
+function closeModal() {
+    document.getElementById('productModal').classList.remove('open');
 }
 
 function addToCart(id) {
@@ -87,20 +127,16 @@ function updateCartUI() {
     } else {
         itemsDiv.innerHTML = Object.entries(cart).map(([id, qty]) => {
             const p = products.find(x => x.id === +id);
-            const price = p.priceCRC || p.price;
-            return `
-                <div class="cart-item">
-                    <div class="cart-item-info">
-                        <h4>${p.name}</h4>
-                        <p>${formatPrice(price)}</p>
-                    </div>
-                    <div class="cart-item-controls">
-                        <button onclick="removeFromCart(${id})">-</button>
-                        <span>${qty}</span>
-                        <button onclick="addToCart(${id})">+</button>
-                    </div>
-                </div>
-            `;
+            return '<div class="cart-item">'
+                + '<div class="cart-item-info">'
+                + '<h4>' + p.name + '</h4>'
+                + '<p>' + formatPrice(p.priceCRC || p.price) + '</p>'
+                + '</div>'
+                + '<div class="cart-item-controls">'
+                + '<button onclick="removeFromCart(' + id + ')">-</button>'
+                + '<span>' + qty + '</span>'
+                + '<button onclick="addToCart(' + id + ')">+</button>'
+                + '</div></div>';
         }).join('');
     }
     const total = Object.entries(cart).reduce((sum, [id, qty]) => {
@@ -114,6 +150,12 @@ let searchTimeout;
 document.getElementById('searchInput').addEventListener('input', e => {
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => renderProducts(e.target.value), 300);
+});
+
+document.getElementById('modeSwitch').addEventListener('change', e => {
+    isDevMode = e.target.checked;
+    document.getElementById('modeLabel').textContent = isDevMode ? 'Desarrollador' : 'Cliente';
+    renderProducts(document.getElementById('searchInput').value);
 });
 
 document.getElementById('cartBtn').addEventListener('click', () => {
@@ -137,6 +179,27 @@ document.getElementById('checkoutBtn').addEventListener('click', () => {
     closeCart();
 });
 
+document.getElementById('checkoutWspBtn').addEventListener('click', () => {
+    if (Object.keys(cart).length === 0) return;
+    const items = Object.entries(cart).map(([id, qty]) => {
+        const p = products.find(x => x.id === +id);
+        return qty + 'x ' + p.name + ' (' + p.code + ')';
+    }).join('\n');
+    const total = Object.entries(cart).reduce((sum, [id, qty]) => {
+        const p = products.find(x => x.id === +id);
+        return sum + (p.priceCRC || p.price) * qty;
+    }, 0);
+    const msg = 'Hola, quiero comprar:\n' + items + '\n\nTotal: ₡' + total.toLocaleString('es-CR', {minimumFractionDigits:2});
+    window.open('https://wa.me/50685001390?text=' + encodeURIComponent(msg), '_blank');
+});
+
+document.getElementById('modalClose').addEventListener('click', closeModal);
+document.getElementById('modalOverlay').addEventListener('click', closeModal);
+
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { closeModal(); closeCart(); }
+});
+
 document.querySelectorAll('nav a').forEach(link => {
     link.addEventListener('click', e => {
         e.preventDefault();
@@ -147,9 +210,8 @@ document.querySelectorAll('nav a').forEach(link => {
 
 document.getElementById('contactForm').addEventListener('submit', e => {
     e.preventDefault();
-    const msg = document.getElementById('formMessage');
-    msg.textContent = 'Gracias por contactarnos. Te responderemos pronto.';
-    msg.style.color = '#28a745';
+    document.getElementById('formMessage').textContent = 'Gracias por contactarnos. Te responderemos pronto.';
+    document.getElementById('formMessage').style.color = '#28a745';
     e.target.reset();
 });
 

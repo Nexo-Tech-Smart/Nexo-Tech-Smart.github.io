@@ -16,9 +16,16 @@
                 <li><a href="#productos">Productos</a></li>
                 <li><a href="#contacto">Contacto</a></li>
             </ul>
-            <button id="cartBtn" class="cart-btn">
-                🛒 <span id="cartCount">0</span>
-            </button>
+            <div class="nav-right">
+                <label class="mode-toggle" title="Cambiar modo">
+                    <span class="mode-label" id="modeLabel">Cliente</span>
+                    <input type="checkbox" id="modeSwitch">
+                    <span class="mode-slider"></span>
+                </label>
+                <button id="cartBtn" class="cart-btn">
+                    &#128722; <span id="cartCount">0</span>
+                </button>
+            </div>
         </div>
     </nav>
 
@@ -33,7 +40,7 @@
     <section id="productos" class="section">
         <div class="container">
             <h2>Productos</h2>
-            <input type="text" id="searchInput" placeholder="Buscar productos..." style="width:100%;max-width:500px;display:block;margin:0 auto 1rem;padding:0.8rem;border:2px solid #ddd;border-radius:5px;font-size:1rem">
+            <input type="text" id="searchInput" placeholder="Buscar productos..." class="search-input">
             <div id="categoryFilters" class="cat-filters"></div>
             <div id="productGrid" class="product-grid"></div>
         </div>
@@ -48,13 +55,28 @@
         <div class="cart-footer">
             <p>Total: <span id="cartTotal">&#8353;0.00</span></p>
             <button id="checkoutBtn" class="btn">Finalizar compra</button>
+            <button id="checkoutWspBtn" class="btn btn-wsp">Pedir por WhatsApp</button>
         </div>
     </aside>
     <div id="cartOverlay" class="cart-overlay"></div>
 
+    <div id="productModal" class="modal">
+        <div class="modal-overlay" id="modalOverlay"></div>
+        <div class="modal-content">
+            <button class="modal-close" id="modalClose">&times;</button>
+            <div class="modal-body" id="modalBody"></div>
+        </div>
+    </div>
+
     <section id="contacto" class="section bg-light">
         <div class="container">
             <h2>Contacto</h2>
+            <div class="contact-info">
+                <p><strong>&#128222; Tel&eacute;fono / WhatsApp:</strong> <a href="https://wa.me/50685001390" target="_blank">8500-1390</a></p>
+                <p><strong>&#9993; Correo:</strong> <a href="mailto:ronaldkfuertes@gmail.com">ronaldkfuertes@gmail.com</a></p>
+                <p><strong>&#128205; San Jos&eacute;, Costa Rica</strong></p>
+                <a href="https://wa.me/50685001390" target="_blank" class="btn btn-wsp" style="margin-top:1rem">&#128172; Escr&iacute;benos por WhatsApp</a>
+            </div>
             <form id="contactForm">
                 <input type="text" placeholder="Nombre" required>
                 <input type="email" placeholder="Correo electronico" required>

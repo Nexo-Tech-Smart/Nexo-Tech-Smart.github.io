@@ -9,7 +9,13 @@ $categories = @(
     @{id=31; name="Carro"},
     @{id=35; name="Videojuegos"},
     @{id=29; name="Celulares"},
-    @{id=27; name="Supermercado"}
+    @{id=27; name="Supermercado"},
+    @{id=28; name="Laptops y Tablets"},
+    @{id=33; name="Herramientas"},
+    @{id=34; name="Repuestos"},
+    @{id=38; name="Accesorios Celular"},
+    @{id=37; name="Servicios"},
+    @{id=39; name="Jugueteria"}
 )
 
 function ParsePrice($text) {
@@ -74,7 +80,8 @@ function ExtractProducts($html, $categoryName) {
     return $products
 }
 
-Write-Host "=== Scraper Completo PlanetGroupCR para Nexo Tech Smart ===" -ForegroundColor Cyan
+Write-Host "=== Scraper COMPLETO PlanetGroupCR ===" -ForegroundColor Cyan
+Write-Host "Categorias a scrapear: $($categories.Count)" -ForegroundColor Yellow
 
 foreach ($cat in $categories) {
     Write-Host "Scrapeando: $($cat.name) (ca=$($cat.id))" -ForegroundColor Yellow
@@ -90,8 +97,8 @@ foreach ($cat in $categories) {
             $html = (Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 15).Content
             if ($page -eq 1) {
                 $maxPages = GetMaxPage $html
-                Write-Host " ($maxPages paginas totales)" -NoNewline
-                if ($maxPages -eq 0) { Write-Host " - sin paginacion"; break }
+                if ($maxPages -eq 0) { Write-Host " (1 pagina)"; $maxPages = 1 }
+                else { Write-Host " ($maxPages paginas)" -NoNewline }
             }
             $products = ExtractProducts $html $cat.name
             if ($products.Count -eq 0) { Write-Host " 0 (fin)"; break }
@@ -107,12 +114,12 @@ foreach ($cat in $categories) {
     
     $allProducts += $catProducts
     $count = $catProducts.Count
-    Write-Host "Total $($cat.name): $count" -ForegroundColor Magenta
+    Write-Host "Total $($cat.name): $count productos" -ForegroundColor Magenta
 }
 
 Write-Host "=== FINAL ===" -ForegroundColor Cyan
-Write-Host "Productos: $($allProducts.Count)" -ForegroundColor Green
+Write-Host "Productos totales: $($allProducts.Count)" -ForegroundColor Green
 
 $json = $allProducts | ConvertTo-Json -Depth 3
 Set-Content -Path $outputFile -Value $json -Encoding UTF8
-Write-Host "Guardado: $outputFile" -ForegroundColor Cyan
+Write-Host "Archivo guardado: $outputFile" -ForegroundColor Cyan

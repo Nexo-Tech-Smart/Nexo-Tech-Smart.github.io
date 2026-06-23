@@ -50,6 +50,12 @@ nav {
     color: #e94560;
 }
 
+.nav-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
 .cart-btn {
     background: none;
     border: none;
@@ -68,6 +74,54 @@ nav {
     position: absolute;
     top: -8px;
     right: -12px;
+}
+
+.mode-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    color: #fff;
+    font-size: 0.8rem;
+    user-select: none;
+}
+
+.mode-toggle input {
+    display: none;
+}
+
+.mode-slider {
+    width: 40px;
+    height: 20px;
+    background: #555;
+    border-radius: 20px;
+    position: relative;
+    transition: background 0.3s;
+}
+
+.mode-slider::after {
+    content: '';
+    width: 16px;
+    height: 16px;
+    background: #fff;
+    border-radius: 50%;
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    transition: transform 0.3s;
+}
+
+.mode-toggle input:checked + .mode-slider {
+    background: #e94560;
+}
+
+.mode-toggle input:checked + .mode-slider::after {
+    transform: translateX(20px);
+}
+
+.mode-label {
+    min-width: 4rem;
+    text-align: right;
 }
 
 .hero {
@@ -113,6 +167,14 @@ nav {
     font-size: 0.85rem;
 }
 
+.btn-wsp {
+    background: #25D366;
+}
+
+.btn-wsp:hover {
+    background: #1ebe5d;
+}
+
 .section {
     padding: 5rem 0;
 }
@@ -121,6 +183,17 @@ nav {
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 2rem;
+}
+
+.search-input {
+    width: 100%;
+    max-width: 500px;
+    display: block;
+    margin: 0 auto 1rem;
+    padding: 0.8rem;
+    border: 2px solid #ddd;
+    border-radius: 5px;
+    font-size: 1rem;
 }
 
 .cat-filters {
@@ -175,13 +248,15 @@ nav {
     border-radius: 10px;
     box-shadow: 0 5px 15px rgba(0,0,0,0.1);
     overflow: hidden;
-    transition: transform 0.3s;
+    transition: transform 0.3s, box-shadow 0.3s;
     display: flex;
     flex-direction: column;
+    cursor: pointer;
 }
 
 .product-card:hover {
     transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
 }
 
 .product-card img {
@@ -210,9 +285,169 @@ nav {
     font-weight: bold;
 }
 
+.product-card .price-original {
+    font-size: 0.9rem;
+    color: #999;
+    text-decoration: line-through;
+}
+
+.product-card .price-dev {
+    font-size: 0.85rem;
+}
+
+.product-card .price-dev .original {
+    color: #28a745;
+    font-weight: bold;
+}
+
+.product-card .price-dev .markup {
+    color: #e94560;
+    font-weight: bold;
+}
+
 .product-card .btn {
     margin-top: auto;
     align-self: flex-start;
+}
+
+/* Modal */
+.modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal.open {
+    display: flex;
+}
+
+.modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+}
+
+.modal-content {
+    position: relative;
+    background: #fff;
+    border-radius: 12px;
+    max-width: 700px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    z-index: 1;
+    animation: modalIn 0.3s ease;
+}
+
+@keyframes modalIn {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+.modal-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: none;
+    border: none;
+    font-size: 2rem;
+    cursor: pointer;
+    color: #333;
+    z-index: 2;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background 0.2s;
+}
+
+.modal-close:hover {
+    background: rgba(0,0,0,0.1);
+}
+
+.modal-body {
+    padding: 2rem;
+}
+
+.modal-body img {
+    width: 100%;
+    max-height: 400px;
+    object-fit: contain;
+    background: #f5f5f5;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+}
+
+.modal-body h2 {
+    font-size: 1.4rem;
+    color: #1a1a2e;
+    margin-bottom: 0.5rem;
+}
+
+.modal-body .modal-meta {
+    color: #888;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+}
+
+.modal-body .modal-price {
+    font-size: 2rem;
+    color: #e94560;
+    font-weight: bold;
+    margin-bottom: 1rem;
+}
+
+.modal-body .modal-price-dev {
+    background: #f0f0f0;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.modal-body .modal-price-dev p {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.3rem 0;
+    font-size: 0.95rem;
+}
+
+.modal-body .modal-price-dev .label {
+    color: #666;
+}
+
+.modal-body .modal-price-dev .value {
+    font-weight: bold;
+}
+
+.modal-body .modal-price-dev .value.green {
+    color: #28a745;
+}
+
+.modal-body .modal-price-dev .value.red {
+    color: #e94560;
+}
+
+.modal-body .modal-price-dev .diff {
+    border-top: 1px solid #ddd;
+    margin-top: 0.3rem;
+    padding-top: 0.5rem;
+    font-weight: bold;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 0.8rem;
+    margin-top: 1.5rem;
+}
+
+.modal-actions .btn {
+    flex: 1;
+    text-align: center;
 }
 
 /* Cart sidebar */
@@ -325,12 +560,15 @@ nav {
 .cart-footer {
     padding: 1.5rem;
     border-top: 1px solid #ddd;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
 }
 
 .cart-footer p {
     font-size: 1.2rem;
     font-weight: bold;
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
 }
 
 .cart-footer #cartTotal {
@@ -345,6 +583,24 @@ nav {
     text-align: center;
     color: #999;
     margin-top: 3rem;
+}
+
+/* Contact */
+.contact-info {
+    max-width: 600px;
+    margin: 0 auto 2rem;
+    text-align: center;
+    line-height: 2;
+}
+
+.contact-info a {
+    color: #e94560;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.contact-info a:hover {
+    text-decoration: underline;
 }
 
 form {
@@ -379,4 +635,25 @@ footer {
     color: #fff;
     text-align: center;
     padding: 2rem;
+}
+
+/* Dev mode badge */
+.dev-badge {
+    background: #ffc107;
+    color: #000;
+    font-size: 0.65rem;
+    font-weight: bold;
+    padding: 0.15rem 0.5rem;
+    border-radius: 10px;
+    margin-left: 0.5rem;
+    vertical-align: middle;
+}
+
+@media (max-width: 768px) {
+    .nav-links { gap: 1rem; }
+    .hero-content h1 { font-size: 2.5rem; }
+    .cart-sidebar { width: 100%; right: -100%; }
+    .modal-content { width: 95%; }
+    .modal-body { padding: 1.2rem; }
+    .modal-body h2 { font-size: 1.2rem; }
 }
