@@ -1,5 +1,6 @@
 let products = [];
 let cart = {};
+let activeCategory = 'Todos';
 
 async function init() {
     try {
@@ -7,10 +8,11 @@ async function init() {
         products = await res.json();
     } catch {
         products = [
-            { id: 1, name: 'Hub Smart Gateway', price: 89.99, priceCRC: 8999, img: 'https://placehold.co/400x300/1a1a2e/e94560?text=Smart+Hub', category: 'Hogar' },
-            { id: 2, name: 'Bombilla WiFi RGB', price: 24.99, img: 'https://placehold.co/400x300/1a1a2e/e94560?text=Bombilla+RGB' },
+            { id: 1, name: 'Hub Smart Gateway', price: 89.99, priceCRC: 8999, category: 'Hogar' },
+            { id: 2, name: 'Bombilla WiFi RGB', price: 24.99, category: 'Hogar' },
         ];
     }
+    renderFilters();
     renderProducts();
 }
 
@@ -18,12 +20,37 @@ function formatPrice(price) {
     return '&#8353;' + Number(price).toLocaleString('es-CR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-function renderProducts(filter) {
+function renderFilters() {
+    const cats = [...new Set(products.map(p => p.category).filter(Boolean))].sort();
+    const container = document.getElementById('categoryFilters');
+    container.innerHTML = '<button class="filter-btn active" data-cat="Todos">Todos (' + products.length + ')</button>' +
+        cats.map(c => {
+            const count = products.filter(p => p.category === c).length;
+            return '<button class="filter-btn" data-cat="' + c + '">' + c + ' (' + count + ')</button>';
+        }).join('');
+    container.addEventListener('click', e => {
+        const btn = e.target.closest('.filter-btn');
+        if (!btn) return;
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        activeCategory = btn.dataset.cat;
+        renderProducts(document.getElementById('searchInput').value);
+    });
+}
+
+function renderProducts(search) {
     const grid = document.getElementById('productGrid');
     let list = products;
-    if (filter) {
-        const f = filter.toLowerCase();
-        list = products.filter(p => p.name.toLowerCase().includes(f) || (p.category && p.category.toLowerCase().includes(f)));
+    if (activeCategory !== 'Todos') {
+        list = list.filter(p => p.category === activeCategory);
+    }
+    if (search) {
+        const f = search.toLowerCase();
+        list = list.filter(p => p.name.toLowerCase().includes(f) || (p.category && p.category.toLowerCase().includes(f)));
+    }
+    if (list.length === 0) {
+        grid.innerHTML = '<p style="text-align:center;color:#999;padding:3rem">No se encontraron productos</p>';
+        return;
     }
     grid.innerHTML = list.map(p => `
         <div class="product-card">
@@ -31,7 +58,7 @@ function renderProducts(filter) {
             <div class="info">
                 <h3>${p.name}</h3>
                 <p class="price">${formatPrice(p.priceCRC || p.price)}</p>
-                ${p.code ? `<small style="display:block;color:#888;font-size:0.8rem">${p.code}</small>` : ''}
+                ${p.code ? '<small style="display:block;color:#888;font-size:0.8rem">' + p.code + '</small>' : ''}
                 <button class="btn btn-sm" onclick="addToCart(${p.id})">Agregar</button>
             </div>
         </div>
@@ -54,7 +81,6 @@ function removeFromCart(id) {
 function updateCartUI() {
     const count = Object.values(cart).reduce((a, b) => a + b, 0);
     document.getElementById('cartCount').textContent = count;
-
     const itemsDiv = document.getElementById('cartItems');
     if (count === 0) {
         itemsDiv.innerHTML = '<p class="cart-empty">El carrito esta vacio</p>';
@@ -77,7 +103,6 @@ function updateCartUI() {
             `;
         }).join('');
     }
-
     const total = Object.entries(cart).reduce((sum, [id, qty]) => {
         const p = products.find(x => x.id === +id);
         return sum + (p.priceCRC || p.price) * qty;
