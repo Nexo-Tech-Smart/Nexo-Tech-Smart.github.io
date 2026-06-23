@@ -1,24 +1,37 @@
-const products = [
-    { id: 1, name: 'Hub Smart Gateway', price: 89.99, img: 'https://placehold.co/400x300/1a1a2e/e94560?text=Smart+Hub' },
-    { id: 2, name: 'Bombilla WiFi RGB', price: 24.99, img: 'https://placehold.co/400x300/1a1a2e/e94560?text=Bombilla+RGB' },
-    { id: 3, name: 'Enchufe Inteligente', price: 19.99, img: 'https://placehold.co/400x300/1a1a2e/e94560?text=Enchufe+WiFi' },
-    { id: 4, name: 'Sensor de Movimiento', price: 29.99, img: 'https://placehold.co/400x300/1a1a2e/e94560?text=Sensor+Mov' },
-    { id: 5, name: 'Camara Seguridad HD', price: 59.99, img: 'https://placehold.co/400x300/1a1a2e/e94560?text=Camara+HD' },
-    { id: 6, name: 'Termostato Inteligente', price: 79.99, img: 'https://placehold.co/400x300/1a1a2e/e94560?text=Termostato' },
-    { id: 7, name: 'Cerradura Digital', price: 129.99, img: 'https://placehold.co/400x300/1a1a2e/e94560?text=Cerradura' },
-    { id: 8, name: 'Sensor Puerta/Ventana', price: 15.99, img: 'https://placehold.co/400x300/1a1a2e/e94560?text=Sensor+P/V' },
-];
-
+let products = [];
 let cart = {};
 
-function renderProducts() {
+async function init() {
+    try {
+        const res = await fetch('products.json');
+        products = await res.json();
+    } catch {
+        products = [
+            { id: 1, name: 'Hub Smart Gateway', price: 89.99, priceCRC: 8999, img: 'https://placehold.co/400x300/1a1a2e/e94560?text=Smart+Hub', category: 'Hogar' },
+            { id: 2, name: 'Bombilla WiFi RGB', price: 24.99, img: 'https://placehold.co/400x300/1a1a2e/e94560?text=Bombilla+RGB' },
+        ];
+    }
+    renderProducts();
+}
+
+function formatPrice(price) {
+    return '&#8353;' + Number(price).toLocaleString('es-CR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function renderProducts(filter) {
     const grid = document.getElementById('productGrid');
-    grid.innerHTML = products.map(p => `
+    let list = products;
+    if (filter) {
+        const f = filter.toLowerCase();
+        list = products.filter(p => p.name.toLowerCase().includes(f) || (p.category && p.category.toLowerCase().includes(f)));
+    }
+    grid.innerHTML = list.map(p => `
         <div class="product-card">
-            <img src="${p.img}" alt="${p.name}">
+            <img src="${p.img}" alt="${p.name}" loading="lazy">
             <div class="info">
                 <h3>${p.name}</h3>
-                <p class="price">$${p.price.toFixed(2)}</p>
+                <p class="price">${formatPrice(p.priceCRC || p.price)}</p>
+                ${p.code ? `<small style="display:block;color:#888;font-size:0.8rem">${p.code}</small>` : ''}
                 <button class="btn btn-sm" onclick="addToCart(${p.id})">Agregar</button>
             </div>
         </div>
@@ -48,11 +61,12 @@ function updateCartUI() {
     } else {
         itemsDiv.innerHTML = Object.entries(cart).map(([id, qty]) => {
             const p = products.find(x => x.id === +id);
+            const price = p.priceCRC || p.price;
             return `
                 <div class="cart-item">
                     <div class="cart-item-info">
                         <h4>${p.name}</h4>
-                        <p>$${p.price.toFixed(2)}</p>
+                        <p>${formatPrice(price)}</p>
                     </div>
                     <div class="cart-item-controls">
                         <button onclick="removeFromCart(${id})">-</button>
@@ -66,10 +80,16 @@ function updateCartUI() {
 
     const total = Object.entries(cart).reduce((sum, [id, qty]) => {
         const p = products.find(x => x.id === +id);
-        return sum + p.price * qty;
+        return sum + (p.priceCRC || p.price) * qty;
     }, 0);
-    document.getElementById('cartTotal').textContent = `$${total.toFixed(2)}`;
+    document.getElementById('cartTotal').innerHTML = formatPrice(total);
 }
+
+let searchTimeout;
+document.getElementById('searchInput').addEventListener('input', e => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => renderProducts(e.target.value), 300);
+});
 
 document.getElementById('cartBtn').addEventListener('click', () => {
     document.getElementById('cartSidebar').classList.add('open');
@@ -108,4 +128,4 @@ document.getElementById('contactForm').addEventListener('submit', e => {
     e.target.reset();
 });
 
-renderProducts();
+init();
