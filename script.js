@@ -13,7 +13,7 @@ async function init() {
         ];
     }
     renderFilters();
-    renderProducts();
+    renderProducts(document.getElementById('searchInput').value);
 }
 
 function formatPrice(price) {
