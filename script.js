@@ -152,8 +152,26 @@ document.getElementById('searchInput').addEventListener('input', e => {
 });
 
 document.getElementById('modeSwitch').addEventListener('change', e => {
-    isDevMode = e.target.checked;
-    document.getElementById('modeLabel').textContent = isDevMode ? 'Desarrollador' : 'Cliente';
+    if (!e.target.checked) {
+        isDevMode = false;
+        document.getElementById('modeLabel').textContent = 'Cliente';
+        renderProducts(document.getElementById('searchInput').value);
+        return;
+    }
+    const user = prompt('Usuario:');
+    if (user === 'root') {
+        const pass = prompt('Contraseña:');
+        if (pass === 'Admin23') {
+            isDevMode = true;
+            document.getElementById('modeLabel').textContent = 'Desarrollador';
+            renderProducts(document.getElementById('searchInput').value);
+            return;
+        }
+    }
+    alert('Credenciales incorrectas');
+    e.target.checked = false;
+    isDevMode = false;
+    document.getElementById('modeLabel').textContent = 'Cliente';
     renderProducts(document.getElementById('searchInput').value);
 });
 
