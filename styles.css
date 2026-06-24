@@ -740,6 +740,44 @@ body.no-scroll { overflow: hidden; }
     justify-content: space-between;
 }
 .cart-footer #cartTotal { color: #FF4747; }
+.payment-info {
+    background: #f0faf0;
+    border: 1px solid #c8e6c9;
+    border-radius: 8px;
+    padding: 10px 12px;
+    text-align: center;
+}
+.payment-label {
+    font-size: 0.72rem;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+.payment-method {
+    font-size: 0.9rem;
+    color: #333;
+    font-weight: 600;
+    margin-top: 2px;
+}
+.payment-number {
+    font-size: 1.3rem;
+    color: #28a745;
+    font-weight: 800;
+    letter-spacing: 2px;
+    margin-top: 2px;
+}
+.payment-whatsapp {
+    display: inline-block;
+    margin-top: 8px;
+    font-size: 0.8rem;
+    color: #25D366;
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s;
+}
+.payment-whatsapp:hover { color: #1da851; text-decoration: underline; }
+
 .btn-cart {
     width: 100%;
     padding: 12px;
@@ -947,6 +985,12 @@ body.no-scroll { overflow: hidden; }
     transition: color 0.2s;
 }
 .footer-col a:hover { color: #FF4747; }
+.footer-whatsapp {
+    color: #25D366 !important;
+    font-weight: 600;
+    margin-top: 4px;
+}
+.footer-whatsapp:hover { color: #1da851 !important; }
 .footer-social {
     display: flex;
     gap: 10px;

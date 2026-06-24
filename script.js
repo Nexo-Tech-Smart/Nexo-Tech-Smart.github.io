@@ -322,6 +322,13 @@ function generateOrder() {
         }).join('')
         + '<tr class="total-row"><td colspan="4">Total</td><td>' + formatPrice(subtotal) + '</td></tr>'
         + '</table>'
+        + '<div style="background:#f0faf0;border:1px solid #c8e6c9;border-radius:8px;padding:14px;margin-bottom:12px;text-align:center">'
+        + '<p style="font-size:0.75rem;color:#888;text-transform:uppercase;letter-spacing:0.5px;font-weight:600">M&eacute;todo de pago</p>'
+        + '<p style="font-size:1rem;color:#333;font-weight:600;margin-top:4px">&#128179; Sinpe M&oacute;vil</p>'
+        + '<p style="font-size:1.5rem;color:#28a745;font-weight:800;letter-spacing:3px;margin-top:4px">1234-5678</p>'
+        + '<p style="font-size:0.8rem;color:#666;margin-top:6px">Realizar transferencia con el monto total de la orden.</p>'
+        + '<p style="margin-top:8px"><a href="https://wa.me/50612345678?text=Hola%2C%20mi%20orden%20es%20' + orderId + '" target="_blank" style="color:#25D366;text-decoration:none;font-weight:600;font-size:0.9rem">&#128172; Contactar por WhatsApp</a></p>'
+        + '</div>'
         + (isDevMode ? '<div class="dev-note"><strong>Copia para desarrollador</strong><br>Orden generada el ' + dateStr + ' a las ' + timeStr + '<br>Cliente: Vista previa modo desarrollador</div>' : '')
         + '<div class="footer"><p>Nexo Tech Smart - San Jos&eacute;, Costa Rica</p><p>Gracias por tu compra</p></div>'
         + '</body></html>';
