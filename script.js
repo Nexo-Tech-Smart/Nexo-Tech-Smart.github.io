@@ -156,7 +156,16 @@ document.getElementById('searchInput').addEventListener('input', e => {
     searchTimeout = setTimeout(() => renderProducts(e.target.value), 300);
 });
 
-document.getElementById('modeSwitch').addEventListener('change', e => {
+async function sha256(str) {
+    const buf = new TextEncoder().encode(str);
+    const hash = await crypto.subtle.digest('SHA-256', buf);
+    return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+const DEV_USER_HASH = '4813494d137e1631bba301d5acab6e7bb7aa74ce1185d456565ef51d737677b2';
+const DEV_PASS_HASH = '66060a42a0fc966f9227ced4770722d86cc97fc1a89607c101d8fb11e0b79465';
+
+document.getElementById('modeSwitch').addEventListener('change', async e => {
     if (!e.target.checked) {
         isDevMode = false;
         document.getElementById('modeLabel').textContent = 'Cliente';
@@ -164,20 +173,28 @@ document.getElementById('modeSwitch').addEventListener('change', e => {
         return;
     }
     const user = prompt('Usuario:');
-    if (user === 'root') {
-        const pass = prompt('Contraseña:');
-        if (pass === 'Admin23') {
-            isDevMode = true;
-            document.getElementById('modeLabel').textContent = 'Desarrollador';
-            renderProducts(document.getElementById('searchInput').value);
-            return;
-        }
+    if (!user) { e.target.checked = false; return; }
+    const userHash = await sha256(user);
+    if (userHash !== DEV_USER_HASH) {
+        alert('Credenciales incorrectas');
+        e.target.checked = false;
+        renderProducts(document.getElementById('searchInput').value);
+        return;
     }
-    alert('Credenciales incorrectas');
-    e.target.checked = false;
-    isDevMode = false;
-    document.getElementById('modeLabel').textContent = 'Cliente';
-    renderProducts(document.getElementById('searchInput').value);
+    const pass = prompt('Contraseña:');
+    if (!pass) { e.target.checked = false; return; }
+    const passHash = await sha256(pass);
+    if (passHash === DEV_PASS_HASH) {
+        isDevMode = true;
+        document.getElementById('modeLabel').textContent = 'Desarrollador';
+        renderProducts(document.getElementById('searchInput').value);
+    } else {
+        alert('Credenciales incorrectas');
+        e.target.checked = false;
+        isDevMode = false;
+        document.getElementById('modeLabel').textContent = 'Cliente';
+        renderProducts(document.getElementById('searchInput').value);
+    }
 });
 
 document.getElementById('cartBtn').addEventListener('click', () => {
