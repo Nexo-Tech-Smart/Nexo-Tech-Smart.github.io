@@ -68,8 +68,9 @@ function renderProducts(search) {
             + '<div class="info">'
             + '<h3>' + p.name + '</h3>'
             + priceHtml
-            + (p.code ? '<small style="display:block;color:#888;font-size:0.8rem">' + p.code + '</small>' : '')
-            + '<button class="btn btn-sm" onclick="event.stopPropagation();addToCart(' + p.id + ')">Agregar</button>'
+            + (p.code ? '<small>' + p.code + '</small>' : '')
+            + '<span class="ship-badge">Envío gratis</span>'
+            + '<button class="btn-sm" onclick="event.stopPropagation();addToCart(' + p.id + ')">Agregar</button>'
             + '</div></div>';
     }).join('');
 }
@@ -95,7 +96,7 @@ function openModal(id) {
             + '</div>'
             : '<div class="modal-price">' + formatPrice(markup) + '</div>')
         + '<div class="modal-actions">'
-        + '<button class="btn btn-sm" onclick="closeModal();addToCart(' + p.id + ')">Agregar al carrito</button>'
+        + '<button class="btn-sm" onclick="closeModal();addToCart(' + p.id + ')">Agregar al carrito</button>'
         + '</div>';
     document.getElementById('productModal').classList.add('open');
 }
@@ -203,10 +204,11 @@ document.addEventListener('keydown', e => {
     if (e.key === 'Escape') { closeModal(); closeCart(); }
 });
 
-document.querySelectorAll('nav a').forEach(link => {
+document.querySelectorAll('.footer-col a[href^="#"], .btn-hero').forEach(link => {
     link.addEventListener('click', e => {
         e.preventDefault();
-        document.querySelector(link.getAttribute('href')).scrollIntoView({ behavior: 'smooth' });
+        const target = document.querySelector(link.getAttribute('href'));
+        if (target) target.scrollIntoView({ behavior: 'smooth' });
         closeCart();
     });
 });

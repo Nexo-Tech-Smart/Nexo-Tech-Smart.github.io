@@ -8,39 +8,49 @@
 </head>
 <body>
 
-    <nav>
-        <div class="nav-container">
-            <div class="logo">Nexo Tech Smart</div>
-            <ul class="nav-links">
-                <li><a href="#inicio">Inicio</a></li>
-                <li><a href="#productos">Productos</a></li>
-            </ul>
-            <div class="nav-right">
+    <header class="top-header">
+        <div class="header-inner">
+            <div class="h-left">
+                <div class="logo">Nexo Tech Smart</div>
+            </div>
+            <div class="h-center">
+                <div class="search-wrap">
+                    <input type="text" id="searchInput" placeholder="Buscar productos..." class="search-input">
+                    <button class="search-btn">&#128269;</button>
+                </div>
+            </div>
+            <div class="h-right">
                 <label class="mode-toggle" title="Cambiar modo">
                     <span class="mode-label" id="modeLabel">Cliente</span>
                     <input type="checkbox" id="modeSwitch">
                     <span class="mode-slider"></span>
                 </label>
                 <button id="cartBtn" class="cart-btn">
-                    &#128722; <span id="cartCount">0</span>
+                    <span class="cart-icon">&#128722;</span>
+                    <span class="cart-badge" id="cartCount">0</span>
                 </button>
             </div>
         </div>
+    </header>
+
+    <nav class="cat-nav">
+        <div class="cat-nav-inner">
+            <div id="categoryFilters" class="cat-filters"></div>
+        </div>
     </nav>
 
-    <section id="inicio" class="hero">
-        <div class="hero-content">
-            <h1>Nexo Tech Smart</h1>
-            <p>Soluciones inteligentes para tu hogar</p>
-            <a href="#productos" class="btn">Ver productos</a>
+    <section class="hero">
+        <div class="hero-slide">
+            <div class="hero-text">
+                <h2>Nexo Tech Smart</h2>
+                <p>Soluciones inteligentes para tu hogar</p>
+                <a href="#productos" class="btn-hero">Ver productos</a>
+            </div>
         </div>
     </section>
 
     <section id="productos" class="section">
         <div class="container">
-            <h2>Productos</h2>
-            <input type="text" id="searchInput" placeholder="Buscar productos..." class="search-input">
-            <div id="categoryFilters" class="cat-filters"></div>
             <div id="productGrid" class="product-grid"></div>
         </div>
     </section>
@@ -48,12 +58,12 @@
     <aside id="cartSidebar" class="cart-sidebar">
         <div class="cart-header">
             <h2>Carrito</h2>
-            <button id="closeCart">&times;</button>
+            <button id="closeCart" class="cart-close">&times;</button>
         </div>
         <div id="cartItems" class="cart-items"></div>
         <div class="cart-footer">
             <p>Total: <span id="cartTotal">&#8353;0.00</span></p>
-            <button id="checkoutBtn" class="btn">Finalizar compra</button>
+            <button id="checkoutBtn" class="btn-cart">Finalizar compra</button>
         </div>
     </aside>
     <div id="cartOverlay" class="cart-overlay"></div>
@@ -66,10 +76,25 @@
         </div>
     </div>
 
-
-
-    <footer>
-        <p>&copy; 2026 Nexo Tech Smart. Todos los derechos reservados.</p>
+    <footer class="site-footer">
+        <div class="footer-inner">
+            <div class="footer-col">
+                <h4>Nexo Tech Smart</h4>
+                <p>Tecnología e innovación para tu hogar y negocio.</p>
+            </div>
+            <div class="footer-col">
+                <h4>Enlaces</h4>
+                <a href="#inicio">Inicio</a>
+                <a href="#productos">Productos</a>
+            </div>
+            <div class="footer-col">
+                <h4>Contacto</h4>
+                <p>San José, Costa Rica</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 Nexo Tech Smart. Todos los derechos reservados.</p>
+        </div>
     </footer>
 
     <script src="script.js"></script>
