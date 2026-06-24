@@ -179,6 +179,11 @@ function removeFromCart(id) {
     updateCartUI();
 }
 
+function deleteFromCart(id) {
+    delete cart[id];
+    updateCartUI();
+}
+
 function updateCartUI() {
     const count = Object.values(cart).reduce((a, b) => a + b, 0);
     document.getElementById('cartCount').textContent = count;
@@ -189,8 +194,10 @@ function updateCartUI() {
         itemsDiv.innerHTML = Object.entries(cart).map(([id, qty]) => {
             const p = products.find(x => x.id === +id);
             return '<div class="cart-item">'
+                + '<button class="cart-item-del" onclick="deleteFromCart(' + id + ')" title="Eliminar">&times;</button>'
                 + '<div class="cart-item-info">'
                 + '<h4>' + p.name + '</h4>'
+                + (p.code ? '<small class="cart-item-code">' + p.code + '</small>' : '')
                 + '<p>' + formatPrice(p.price) + '</p>'
                 + '</div>'
                 + '<div class="cart-item-controls">'
@@ -227,6 +234,7 @@ document.getElementById('modeSwitch').addEventListener('change', async e => {
         isDevMode = false;
         document.getElementById('modeLabel').textContent = 'Cliente';
         document.getElementById('ordersBtn').classList.remove('dev-visible');
+        document.getElementById('orderAllBtn').classList.remove('dev-visible');
         closeOrdersPanel();
         renderProducts(document.getElementById('searchInput').value);
         return;
@@ -247,6 +255,7 @@ document.getElementById('modeSwitch').addEventListener('change', async e => {
         isDevMode = true;
         document.getElementById('modeLabel').textContent = 'Desarrollador';
         document.getElementById('ordersBtn').classList.add('dev-visible');
+        document.getElementById('orderAllBtn').classList.add('dev-visible');
         updateOrdersBadge();
         renderProducts(document.getElementById('searchInput').value);
     } else {
@@ -365,7 +374,7 @@ function saveOrder(orderId, dateStr, items, subtotal, receiptHtml) {
     orders.unshift({
         id: orderId,
         date: dateStr,
-        items: items.map(item => ({ name: item.name, code: item.code, qty: item.qty, price: item.price })),
+        items: items.map(item => ({ id: item.id, name: item.name, code: item.code, qty: item.qty, price: item.price, sourceUrl: item.sourceUrl })),
         subtotal: subtotal,
         receiptHtml: receiptHtml,
         status: 'pending',
@@ -412,6 +421,7 @@ function renderOrders() {
             + '<button class="btn-view" data-action="view" data-idx="' + idx + '">&#128065; Ver</button>'
             + '<button class="btn-pdf" data-action="pdf" data-idx="' + idx + '">&#128196; PDF</button>'
             + (o.status === 'pending' ? '<button class="btn-process" data-action="process" data-idx="' + idx + '">&#9989; Procesar</button>' : '')
+            + (isDevMode && o.status === 'pending' ? '<button class="btn-supplier" data-action="supplier-order" data-idx="' + idx + '">&#128666; Ordenar pedido</button>' : '')
             + '</div></div>';
     }).join('');
 
@@ -428,6 +438,8 @@ function renderOrders() {
             } else if (action === 'pdf') {
                 const w = window.open('', '_blank');
                 if (w) { w.document.write(order.receiptHtml); w.document.close(); }
+            } else if (action === 'supplier-order') {
+                orderFromSupplier(order);
             } else if (action === 'process') {
                 if (confirm('Marcar orden ' + order.id + ' como procesada?')) {
                     orders[idx].status = 'processed';
@@ -463,6 +475,150 @@ document.getElementById('clearOrdersBtn').addEventListener('click', () => {
         updateOrdersBadge();
     }
 });
+
+document.getElementById('orderAllBtn').addEventListener('click', orderAllFromSupplier);
+
+const SUPPLIER_CREDS_KEY = 'planetSupplierCreds';
+const SUPPLIER_CONFIG_KEY = 'planetSupplierConfig';
+
+function getSupplierConfig() {
+    return JSON.parse(localStorage.getItem(SUPPLIER_CONFIG_KEY) || '{}');
+}
+
+function submitFormToPopup(action, method, params, target) {
+    const form = document.createElement('form');
+    form.action = action;
+    form.method = method || 'POST';
+    form.target = target;
+    form.style.display = 'none';
+    Object.entries(params).forEach(([k, v]) => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = k;
+        input.value = String(v);
+        form.appendChild(input);
+    });
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
+}
+
+function orderFromSupplier(order) {
+    if (!order || !order.items || order.items.length === 0) return;
+    const validItems = order.items.filter(item => item.sourceUrl);
+    if (validItems.length === 0) {
+        alert('Esta orden no contiene productos con origen PlanetGroupCR.');
+        return;
+    }
+
+    let creds = JSON.parse(localStorage.getItem(SUPPLIER_CREDS_KEY) || 'null');
+    if (!creds || !creds.username || !creds.password) {
+        const username = prompt('Ingrese el usuario de PlanetGroupCR:');
+        if (!username) return;
+        const password = prompt('Ingrese la contrase\u00f1a de PlanetGroupCR:');
+        if (!password) return;
+        creds = { username, password };
+        if (confirm('Guardar credenciales para pr\u00f3ximas \u00f3rdenes?')) {
+            localStorage.setItem(SUPPLIER_CREDS_KEY, JSON.stringify(creds));
+        }
+    }
+
+    const popupName = 'planetPopup_' + Date.now();
+    const popup = window.open('about:blank', popupName, 'width=1200,height=800,scrollbars=yes');
+    if (!popup) {
+        alert('El navegador bloque\u00f3 la ventana emergente. Permita popups para este sitio.');
+        return;
+    }
+
+    const statusEl = document.createElement('div');
+    statusEl.id = 'supplierStatus';
+    statusEl.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#191919;color:#fff;padding:16px 24px;border-radius:8px;z-index:9999;font-size:14px;max-width:450px;box-shadow:0 4px 12px rgba(0,0,0,0.3);line-height:1.5';
+    statusEl.innerHTML = '<strong>&#128666; Ordenando pedido...</strong><br><span id="supplierStatusText">Iniciando sesi\u00f3n en PlanetGroupCR...</span>';
+    document.body.appendChild(statusEl);
+
+    function updateStatus(text) {
+        const el = document.getElementById('supplierStatusText');
+        if (el) el.textContent = text;
+    }
+
+    function removeStatus() {
+        const el = document.getElementById('supplierStatus');
+        if (el) el.remove();
+    }
+
+    // Step 1: Login
+    updateStatus('Iniciando sesi\u00f3n como ' + creds.username + '...');
+    submitFormToPopup('https://planetgroupcr.com/login.php', 'POST', {
+        login_userid: creds.username,
+        login_passwd: creds.password,
+        go: '1'
+    }, popupName);
+
+    // Step 2: Add items with delays
+    validItems.forEach((item, i) => {
+        const delay = (i + 1) * 3500;
+        setTimeout(() => {
+            updateStatus('(' + (i + 1) + '/' + validItems.length + ') ' + item.name.substring(0, 50) + '...');
+            try {
+                const url = new URL(item.sourceUrl);
+                const itemId = url.searchParams.get('item_id');
+                submitFormToPopup('https://planetgroupcr.com/carrito.php', 'POST', {
+                    item_id: itemId,
+                    cantidad: item.qty
+                }, popupName);
+            } catch (e) {
+                submitFormToPopup(item.sourceUrl, 'GET', {}, popupName);
+            }
+        }, delay);
+    });
+
+    // Step 3: After all items, show cart
+    const totalDelay = (validItems.length + 1) * 3500;
+    setTimeout(() => {
+        updateStatus('Orden procesada. Mostrando carrito...');
+        submitFormToPopup('https://planetgroupcr.com/carrito.php', 'GET', {}, popupName);
+        setTimeout(removeStatus, 3000);
+    }, totalDelay);
+}
+
+function orderAllFromSupplier() {
+    if (!isDevMode) return;
+    const orders = getOrders();
+    const pending = orders.filter(o => o.status === 'pending');
+    if (pending.length === 0) {
+        alert('No hay \u00f3rdenes pendientes.');
+        return;
+    }
+
+    const allItems = {};
+    pending.forEach(o => {
+        (o.items || []).forEach(item => {
+            if (!item.sourceUrl) return;
+            const key = item.id || item.code || item.name;
+            if (allItems[key]) {
+                allItems[key].qty += item.qty;
+            } else {
+                allItems[key] = { ...item };
+            }
+        });
+    });
+
+    const combined = Object.values(allItems);
+    if (combined.length === 0) {
+        alert('Ninguna orden pendiente contiene productos con origen PlanetGroupCR.');
+        return;
+    }
+
+    if (!confirm('Procesar ' + combined.reduce((s, i) => s + i.qty, 0) + ' art\u00edculos de ' + pending.length + ' orden(es) pendientes en PlanetGroupCR?')) return;
+
+    const virtualOrder = {
+        id: 'ALL-' + Date.now().toString(36).toUpperCase(),
+        date: new Date().toLocaleString('es-CR'),
+        items: combined,
+        subtotal: combined.reduce((s, i) => s + i.price * i.qty, 0)
+    };
+    orderFromSupplier(virtualOrder);
+}
 
 document.getElementById('modalClose').addEventListener('click', closeModal);
 document.getElementById('modalOverlay').addEventListener('click', closeModal);
