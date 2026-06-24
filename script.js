@@ -96,7 +96,6 @@ function openModal(id) {
             : '<div class="modal-price">' + formatPrice(markup) + '</div>')
         + '<div class="modal-actions">'
         + '<button class="btn btn-sm" onclick="closeModal();addToCart(' + p.id + ')">Agregar al carrito</button>'
-        + '<a class="btn btn-sm btn-wsp" href="https://wa.me/50685001390?text=' + encodeURIComponent('Hola, me interesa: ' + p.name + ' (' + p.code + ') - ₡' + markup.toLocaleString('es-CR', {minimumFractionDigits:2})) + '" target="_blank">Consultar por WhatsApp</a>'
         + '</div>';
     document.getElementById('productModal').classList.add('open');
 }
@@ -179,20 +178,6 @@ document.getElementById('checkoutBtn').addEventListener('click', () => {
     closeCart();
 });
 
-document.getElementById('checkoutWspBtn').addEventListener('click', () => {
-    if (Object.keys(cart).length === 0) return;
-    const items = Object.entries(cart).map(([id, qty]) => {
-        const p = products.find(x => x.id === +id);
-        return qty + 'x ' + p.name + ' (' + p.code + ')';
-    }).join('\n');
-    const total = Object.entries(cart).reduce((sum, [id, qty]) => {
-        const p = products.find(x => x.id === +id);
-        return sum + (p.priceCRC || p.price) * qty;
-    }, 0);
-    const msg = 'Hola, quiero comprar:\n' + items + '\n\nTotal: ₡' + total.toLocaleString('es-CR', {minimumFractionDigits:2});
-    window.open('https://wa.me/50685001390?text=' + encodeURIComponent(msg), '_blank');
-});
-
 document.getElementById('modalClose').addEventListener('click', closeModal);
 document.getElementById('modalOverlay').addEventListener('click', closeModal);
 
@@ -206,13 +191,6 @@ document.querySelectorAll('nav a').forEach(link => {
         document.querySelector(link.getAttribute('href')).scrollIntoView({ behavior: 'smooth' });
         closeCart();
     });
-});
-
-document.getElementById('contactForm').addEventListener('submit', e => {
-    e.preventDefault();
-    document.getElementById('formMessage').textContent = 'Gracias por contactarnos. Te responderemos pronto.';
-    document.getElementById('formMessage').style.color = '#28a745';
-    e.target.reset();
 });
 
 init();
