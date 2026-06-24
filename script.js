@@ -11,8 +11,8 @@ async function init() {
         products = await res.json();
     } catch {
         products = [
-            { id: 1, name: 'Hub Smart Gateway', price: 8999, category: 'Hogar' },
-            { id: 2, name: 'Bombilla WiFi RGB', price: 2499, category: 'Hogar' },
+            { id: 1, name: 'Hub Smart Gateway', priceCRC: 8999, price: calculateSellingPrice(8999), category: 'Hogar' },
+            { id: 2, name: 'Bombilla WiFi RGB', priceCRC: 2499, price: calculateSellingPrice(2499), category: 'Hogar' },
         ];
     }
     renderFilters();
@@ -21,18 +21,24 @@ async function init() {
     initHero();
 }
 
+function calculateSellingPrice(costCRC) {
+    if (!costCRC || costCRC <= 0) throw new Error('Invalid product cost');
+    let minProfit, minMargin;
+    if (costCRC <= 5000) { minProfit = 1500; minMargin = 0.30; }
+    else if (costCRC <= 20000) { minProfit = 3000; minMargin = 0.25; }
+    else if (costCRC <= 100000) { minProfit = 5000; minMargin = 0.20; }
+    else { minProfit = 10000; minMargin = 0.15; }
+    const margin = Math.max(minMargin, minProfit / costCRC);
+    const sellingPrice = costCRC * (1 + margin);
+    return Math.round(sellingPrice / 100) * 100;
+}
+
 function formatPrice(price) {
     return '&#8353;' + Number(price).toLocaleString('es-CR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function getOriginalPrice(p) {
-    return Math.round((p.priceCRC || p.price) / 1.3 * 100) / 100;
-}
-
-function getDiscountPercent(p) {
-    const orig = getOriginalPrice(p);
-    const markup = p.priceCRC || p.price;
-    return Math.round((1 - orig / markup) * 100);
+    return p.priceCRC;
 }
 
 function getRandomRating() {
@@ -109,11 +115,10 @@ function renderProducts(search) {
         return;
     }
     grid.innerHTML = list.map(p => {
-        const markup = p.priceCRC || p.price;
         const rating = getRandomRating();
         const priceHtml = isDevMode
-            ? '<div class="price-dev"><span class="original">&#8353;' + getOriginalPrice(p).toLocaleString('es-CR', {minimumFractionDigits:2}) + '</span> &rarr; <span class="markup">&#8353;' + markup.toLocaleString('es-CR', {minimumFractionDigits:2}) + '</span></div>'
-            : '<div class="price-row"><span class="price">' + formatPrice(markup) + '</span></div>';
+            ? '<div class="price-dev"><span class="original">&#8353;' + getOriginalPrice(p).toLocaleString('es-CR', {minimumFractionDigits:2}) + '</span> &rarr; <span class="markup">&#8353;' + p.price.toLocaleString('es-CR', {minimumFractionDigits:2}) + '</span></div>'
+            : '<div class="price-row"><span class="price">' + formatPrice(p.price) + '</span></div>';
         return '<div class="product-card" onclick="openModal(' + p.id + ')">'
             + '<span class="badge-free-ship">Envío gratis</span>'
             + '<img src="' + p.img + '" alt="' + p.name.replace(/"/g, '&quot;') + '" loading="lazy">'
@@ -131,10 +136,7 @@ function renderProducts(search) {
 function openModal(id) {
     const p = products.find(x => x.id === id);
     if (!p) return;
-    const markup = p.priceCRC || p.price;
-    const original = getOriginalPrice(p);
     const rating = getRandomRating();
-    const discount = getDiscountPercent(p);
     const body = document.getElementById('modalBody');
     body.innerHTML = '<img src="' + p.img + '" alt="' + p.name.replace(/"/g, '&quot;') + '">'
         + '<h2>' + p.name + '</h2>'
@@ -146,11 +148,11 @@ function openModal(id) {
         + '</div>'
         + (isDevMode
             ? '<div class="modal-price-dev">'
-                + '<p><span class="label">Precio PlanetGroupCR (original):</span><span class="value green">&#8353;' + original.toLocaleString('es-CR', {minimumFractionDigits:2}) + '</span></p>'
-                + '<p><span class="label">Precio Nexo Tech Smart (+30%):</span><span class="value red">&#8353;' + markup.toLocaleString('es-CR', {minimumFractionDigits:2}) + '</span></p>'
-                + '<p class="diff"><span class="label">Diferencia (+30%):</span><span class="value red">&#8353;' + (markup - original).toLocaleString('es-CR', {minimumFractionDigits:2}) + '</span></p>'
+                + '<p><span class="label">Costo PlanetGroupCR:</span><span class="value green">&#8353;' + getOriginalPrice(p).toLocaleString('es-CR', {minimumFractionDigits:2}) + '</span></p>'
+                + '<p><span class="label">Precio Nexo Tech Smart:</span><span class="value red">&#8353;' + p.price.toLocaleString('es-CR', {minimumFractionDigits:2}) + '</span></p>'
+                + '<p class="diff"><span class="label">Margen:</span><span class="value red">&#8353;' + (p.price - getOriginalPrice(p)).toLocaleString('es-CR', {minimumFractionDigits:2}) + '</span></p>'
             + '</div>'
-            : '<div class="modal-price">' + formatPrice(markup) + '</div>')
+            : '<div class="modal-price">' + formatPrice(p.price) + '</div>')
         + (isDevMode && p.sourceUrl
             ? '<a href="' + p.sourceUrl + '" target="_blank" class="btn-sm btn-source" style="display:inline-block;text-decoration:none;margin-bottom:10px;background:#28a745">&#128279; Abrir en PlanetGroupCR</a><br>'
             : '')
@@ -189,7 +191,7 @@ function updateCartUI() {
             return '<div class="cart-item">'
                 + '<div class="cart-item-info">'
                 + '<h4>' + p.name + '</h4>'
-                + '<p>' + formatPrice(p.priceCRC || p.price) + '</p>'
+                + '<p>' + formatPrice(p.price) + '</p>'
                 + '</div>'
                 + '<div class="cart-item-controls">'
                 + '<button onclick="removeFromCart(' + id + ')">-</button>'
@@ -200,7 +202,7 @@ function updateCartUI() {
     }
     const total = Object.entries(cart).reduce((sum, [id, qty]) => {
         const p = products.find(x => x.id === +id);
-        return sum + (p.priceCRC || p.price) * qty;
+        return sum + p.price * qty;
     }, 0);
     document.getElementById('cartTotal').innerHTML = formatPrice(total);
 }
@@ -281,7 +283,7 @@ function generateOrder() {
     const dateStr = now.toLocaleDateString('es-CR', { year: 'numeric', month: 'long', day: 'numeric' });
     const timeStr = now.toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' });
 
-    const subtotal = items.reduce((sum, item) => sum + (item.priceCRC || item.price) * item.qty, 0);
+    const subtotal = items.reduce((sum, item) => sum + item.price * item.qty, 0);
 
     const receiptHtml = '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">'
         + '<title>Orden ' + orderId + ' - Nexo Tech Smart</title>'
@@ -304,8 +306,7 @@ function generateOrder() {
         + '<div class="order-info"><span><strong>Orden:</strong> ' + orderId + '</span><span><strong>Fecha:</strong> ' + dateStr + ' ' + timeStr + '</span></div>'
         + '<table><tr><th>Producto</th><th>Código</th><th>Cant.</th><th>Precio</th><th>Subtotal</th></tr>'
         + items.map(item => {
-            const price = item.priceCRC || item.price;
-            return '<tr><td>' + item.name + '</td><td style="color:#999;font-size:0.8rem">' + (item.code || '—') + '</td><td>' + item.qty + '</td><td>' + formatPrice(price) + '</td><td>' + formatPrice(price * item.qty) + '</td></tr>';
+            return '<tr><td>' + item.name + '</td><td style="color:#999;font-size:0.8rem">' + (item.code || '—') + '</td><td>' + item.qty + '</td><td>' + formatPrice(item.price) + '</td><td>' + formatPrice(item.price * item.qty) + '</td></tr>';
         }).join('')
         + '<tr class="total-row"><td colspan="4">Total</td><td>' + formatPrice(subtotal) + '</td></tr>'
         + '</table>'
@@ -329,8 +330,8 @@ function generateOrder() {
             Producto: item.name,
             Codigo: item.code || '—',
             Cantidad: item.qty,
-            Precio: '₡' + ((item.priceCRC || item.price)).toLocaleString('es-CR'),
-            Subtotal: '₡' + ((item.priceCRC || item.price) * item.qty).toLocaleString('es-CR')
+            Precio: '₡' + item.price.toLocaleString('es-CR'),
+            Subtotal: '₡' + (item.price * item.qty).toLocaleString('es-CR')
         })));
         console.log('Total: ₡' + subtotal.toLocaleString('es-CR'));
         window.open(url, '_blank');
