@@ -562,8 +562,9 @@ function orderFromSupplier(order) {
             try {
                 const url = new URL(item.sourceUrl);
                 const itemId = url.searchParams.get('item_id');
-                submitFormToPopup('https://planetgroupcr.com/carrito.php', 'POST', {
+                submitFormToPopup('https://planetgroupcr.com/item_shop-orden_do.php', 'POST', {
                     item_id: itemId,
+                    go: '1',
                     cantidad: item.qty
                 }, popupName);
             } catch (e) {
@@ -576,7 +577,7 @@ function orderFromSupplier(order) {
     const totalDelay = (validItems.length + 1) * 3500;
     setTimeout(() => {
         updateStatus('Orden procesada. Mostrando carrito...');
-        submitFormToPopup('https://planetgroupcr.com/carrito.php', 'GET', {}, popupName);
+        submitFormToPopup('https://planetgroupcr.com/orden_agregar.php', 'GET', {}, popupName);
         setTimeout(removeStatus, 3000);
     }, totalDelay);
 }
