@@ -104,10 +104,33 @@
             <span id="ordersSummary" class="orders-summary">0 órdenes</span>
             <button id="orderAllBtn" class="orders-orderall-btn" title="Ordenar todos los pedidos pendientes en PlanetGroupCR">Ordenar todos</button>
             <button id="clearOrdersBtn" class="orders-clear-btn" title="Eliminar todas las órdenes">Limpiar todo</button>
+            <button id="priceComparerBtn" class="orders-pricecom-btn dev-visible" title="Comparar precios con PlanetGroupCR">Comparar precios</button>
         </div>
         <div id="ordersList" class="orders-list"></div>
     </aside>
     <div id="ordersOverlay" class="orders-overlay"></div>
+
+    <aside id="priceComparer" class="price-comparer">
+        <div class="price-comparer-header">
+            <h2>Comparador de Precios</h2>
+            <button id="priceCompClose" class="price-comp-close">&times;</button>
+        </div>
+        <div class="price-comparer-toolbar">
+            <span id="priceCompSummary">Cargando productos...</span>
+            <div class="price-comp-actions">
+                <select id="priceCompCat" class="price-comp-select">
+                    <option value="">Todas las categorías</option>
+                </select>
+                <button id="priceCompStart" class="price-comp-btn">Iniciar comparación</button>
+            </div>
+        </div>
+        <div id="priceCompProgress" class="price-comp-progress" style="display:none">
+            <div class="price-comp-progress-bar" id="priceCompProgressBar" style="width:0%"></div>
+            <span id="priceCompProgressText">0%</span>
+        </div>
+        <div id="priceCompResults" class="price-comp-results"></div>
+    </aside>
+    <div id="priceCompOverlay" class="price-comp-overlay"></div>
 
     <aside id="cartSidebar" class="cart-sidebar">
         <div class="cart-header">
@@ -173,6 +196,7 @@
         </div>
     </footer>
 
+    <script src="pricingEngine.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

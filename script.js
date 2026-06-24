@@ -22,23 +22,37 @@ async function init() {
 }
 
 function calculateSellingPrice(costCRC) {
-    if (!costCRC || costCRC <= 0) throw new Error('Invalid product cost');
-    let minProfit, minMargin;
-    if (costCRC <= 5000) { minProfit = 1500; minMargin = 0.30; }
-    else if (costCRC <= 20000) { minProfit = 3000; minMargin = 0.25; }
-    else if (costCRC <= 100000) { minProfit = 5000; minMargin = 0.20; }
-    else { minProfit = 10000; minMargin = 0.15; }
-    const margin = Math.max(minMargin, minProfit / costCRC);
-    const sellingPrice = costCRC * (1 + margin);
-    return Math.round(sellingPrice / 100) * 100;
+    const result = calculateOptimalPrice(costCRC, '', null);
+    return result.price;
 }
 
 function formatPrice(price) {
     return '&#8353;' + Number(price).toLocaleString('es-CR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-function getOriginalPrice(p) {
-    return p.priceCRC;
+function getCostPrice(p) {
+    return p.priceCRC || p.price;
+}
+
+function getSellingPrice(p) {
+    if (p.priceCRC) return p.price;
+    const cost = Number(p.price);
+    if (!cost || cost <= 0) return p.price || 0;
+    const result = calculateOptimalPrice(cost, p.category, p.marketReferencePrice || null);
+    return result.price;
+}
+
+function getMarginPercent(p) {
+    const cost = getCostPrice(p);
+    const sell = getSellingPrice(p);
+    if (!cost || cost <= 0) return 0;
+    return Math.round((sell - cost) / cost * 100);
+}
+
+function getPricingInfo(p) {
+    const cost = getCostPrice(p);
+    if (!cost || cost <= 0) return null;
+    return calculateOptimalPrice(cost, p.category, p.marketReferencePrice || null);
 }
 
 function getRandomRating() {
@@ -116,9 +130,16 @@ function renderProducts(search) {
     }
     grid.innerHTML = list.map(p => {
         const rating = getRandomRating();
+        const cost = getCostPrice(p);
+        const sell = getSellingPrice(p);
+        const margin = getMarginPercent(p);
+        const pi = getPricingInfo(p);
         const priceHtml = isDevMode
-            ? '<div class="price-dev"><span class="original">&#8353;' + getOriginalPrice(p).toLocaleString('es-CR', {minimumFractionDigits:2}) + '</span> &rarr; <span class="markup">&#8353;' + p.price.toLocaleString('es-CR', {minimumFractionDigits:2}) + '</span></div>'
-            : '<div class="price-row"><span class="price">' + formatPrice(p.price) + '</span></div>';
+            ? '<div class="price-dev"><span class="original">&#8353;' + cost.toLocaleString('es-CR', {minimumFractionDigits:2}) + '</span> &rarr; <span class="markup">&#8353;' + sell.toLocaleString('es-CR', {minimumFractionDigits:2}) + '</span> <span class="margin-badge">+' + margin + '%</span>'
+                + (pi && pi.method === 'optimization' ? ' <span class="engine-badge">&#9881; ' + pi.alpha.toFixed(1) + '</span>' : '')
+                + (pi && pi.referencePrice ? ' <span class="ref-badge">R=&#8353;' + pi.referencePrice.toLocaleString('es-CR') + '</span>' : '')
+            + '</div>'
+            : '<div class="price-row"><span class="price">' + formatPrice(sell) + '</span></div>';
         return '<div class="product-card" onclick="openModal(' + p.id + ')">'
             + '<span class="badge-free-ship">Envío gratis</span>'
             + '<img src="' + p.img + '" alt="' + p.name.replace(/"/g, '&quot;') + '" loading="lazy">'
@@ -137,6 +158,10 @@ function openModal(id) {
     const p = products.find(x => x.id === id);
     if (!p) return;
     const rating = getRandomRating();
+    const cost = getCostPrice(p);
+    const sell = getSellingPrice(p);
+    const margin = getMarginPercent(p);
+    const pi = getPricingInfo(p);
     const body = document.getElementById('modalBody');
     body.innerHTML = '<img src="' + p.img + '" alt="' + p.name.replace(/"/g, '&quot;') + '">'
         + '<h2>' + p.name + '</h2>'
@@ -148,11 +173,16 @@ function openModal(id) {
         + '</div>'
         + (isDevMode
             ? '<div class="modal-price-dev">'
-                + '<p><span class="label">Costo PlanetGroupCR:</span><span class="value green">&#8353;' + getOriginalPrice(p).toLocaleString('es-CR', {minimumFractionDigits:2}) + '</span></p>'
-                + '<p><span class="label">Precio Nexo Tech Smart:</span><span class="value red">&#8353;' + p.price.toLocaleString('es-CR', {minimumFractionDigits:2}) + '</span></p>'
-                + '<p class="diff"><span class="label">Margen:</span><span class="value red">&#8353;' + (p.price - getOriginalPrice(p)).toLocaleString('es-CR', {minimumFractionDigits:2}) + '</span></p>'
+                + '<p><span class="label">Costo PlanetGroupCR:</span><span class="value green">&#8353;' + cost.toLocaleString('es-CR', {minimumFractionDigits:2}) + '</span></p>'
+                + '<p><span class="label">Precio Nexo Tech Smart:</span><span class="value red">&#8353;' + sell.toLocaleString('es-CR', {minimumFractionDigits:2}) + '</span></p>'
+                + '<p class="diff"><span class="label">Margen:</span><span class="value red">+' + margin + '% (&#8353;' + (sell - cost).toLocaleString('es-CR', {minimumFractionDigits:2}) + ')</span></p>'
+                + (pi && pi.referencePrice ? '<p><span class="label">Precio referencia (R):</span><span class="value blue">&#8353;' + pi.referencePrice.toLocaleString('es-CR', {minimumFractionDigits:2}) + '</span></p>' : '')
+                + (pi ? '<p><span class="label">Elasticidad (&alpha;):</span><span class="value blue">' + pi.alpha.toFixed(1) + '</span></p>' : '')
+                + (pi ? '<p><span class="label">Utilidad esperada:</span><span class="value orange">&#8353;' + (pi.expectedUtility || 0).toLocaleString('es-CR', {minimumFractionDigits:2}) + '</span></p>' : '')
+                + (pi ? '<p><span class="label">Prob. conversi&oacute;n:</span><span class="value orange">' + (pi.conversionProb ? (pi.conversionProb * 100).toFixed(1) + '%' : 'N/A') + '</span></p>' : '')
+                + (pi ? '<p><span class="label">M&eacute;todo:</span><span class="value blue">' + pi.method + '</span></p>' : '')
             + '</div>'
-            : '<div class="modal-price">' + formatPrice(p.price) + '</div>')
+            : '<div class="modal-price">' + formatPrice(sell) + '</div>')
         + (isDevMode && p.sourceUrl
             ? '<a href="' + p.sourceUrl + '" target="_blank" class="btn-sm btn-source" style="display:inline-block;text-decoration:none;margin-bottom:10px;background:#28a745">&#128279; Abrir en PlanetGroupCR</a><br>'
             : '')
@@ -198,7 +228,7 @@ function updateCartUI() {
                 + '<div class="cart-item-info">'
                 + '<h4>' + p.name + '</h4>'
                 + (p.code ? '<small class="cart-item-code">' + p.code + '</small>' : '')
-                + '<p>' + formatPrice(p.price) + '</p>'
+                + '<p>' + formatPrice(getSellingPrice(p)) + '</p>'
                 + '</div>'
                 + '<div class="cart-item-controls">'
                 + '<button onclick="removeFromCart(' + id + ')">-</button>'
@@ -209,7 +239,7 @@ function updateCartUI() {
     }
     const total = Object.entries(cart).reduce((sum, [id, qty]) => {
         const p = products.find(x => x.id === +id);
-        return sum + p.price * qty;
+        return sum + getSellingPrice(p) * qty;
     }, 0);
     document.getElementById('cartTotal').innerHTML = formatPrice(total);
 }
@@ -235,6 +265,7 @@ document.getElementById('modeSwitch').addEventListener('change', async e => {
         document.getElementById('modeLabel').textContent = 'Cliente';
         document.getElementById('ordersBtn').classList.remove('dev-visible');
         document.getElementById('orderAllBtn').classList.remove('dev-visible');
+        document.getElementById('priceComparerBtn').classList.remove('dev-visible');
         closeOrdersPanel();
         renderProducts(document.getElementById('searchInput').value);
         return;
@@ -256,6 +287,7 @@ document.getElementById('modeSwitch').addEventListener('change', async e => {
         document.getElementById('modeLabel').textContent = 'Desarrollador';
         document.getElementById('ordersBtn').classList.add('dev-visible');
         document.getElementById('orderAllBtn').classList.add('dev-visible');
+        document.getElementById('priceComparerBtn').classList.add('dev-visible');
         updateOrdersBadge();
         renderProducts(document.getElementById('searchInput').value);
     } else {
@@ -291,12 +323,14 @@ function generateOrder() {
         return { ...p, qty };
     });
 
-    const orderId = 'ORD-' + Date.now().toString(36).toUpperCase();
+    const orders = getOrders();
+    const lastNum = orders.length > 0 ? parseInt(orders[0].id.replace('ORD-', '')) || 0 : 0;
+    const orderId = 'ORD-' + String(lastNum + 1).padStart(3, '0');
     const now = new Date();
     const dateStr = now.toLocaleDateString('es-CR', { year: 'numeric', month: 'long', day: 'numeric' });
     const timeStr = now.toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' });
 
-    const subtotal = items.reduce((sum, item) => sum + item.price * item.qty, 0);
+    const subtotal = items.reduce((sum, item) => sum + getSellingPrice(item) * item.qty, 0);
 
     const receiptHtml = '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">'
         + '<title>Orden ' + orderId + ' - Nexo Tech Smart</title>'
@@ -327,7 +361,7 @@ function generateOrder() {
         + '<div class="order-info"><span><strong>Orden:</strong> ' + orderId + '</span><span><strong>Fecha:</strong> ' + dateStr + ' ' + timeStr + '</span></div>'
         + '<table><tr><th>Producto</th><th>Código</th><th>Cant.</th><th>Precio</th><th>Subtotal</th></tr>'
         + items.map(item => {
-            return '<tr><td>' + item.name + '</td><td style="color:#999;font-size:0.8rem">' + (item.code || '—') + '</td><td>' + item.qty + '</td><td>' + formatPrice(item.price) + '</td><td>' + formatPrice(item.price * item.qty) + '</td></tr>';
+            return '<tr><td>' + item.name + '</td><td style="color:#999;font-size:0.8rem">' + (item.code || '—') + '</td><td>' + item.qty + '</td><td>' + formatPrice(getSellingPrice(item)) + '</td><td>' + formatPrice(getSellingPrice(item) * item.qty) + '</td></tr>';
         }).join('')
         + '<tr class="total-row"><td colspan="4">Total</td><td>' + formatPrice(subtotal) + '</td></tr>'
         + '</table>'
@@ -356,8 +390,8 @@ function generateOrder() {
             Producto: item.name,
             Codigo: item.code || '—',
             Cantidad: item.qty,
-            Precio: '₡' + item.price.toLocaleString('es-CR'),
-            Subtotal: '₡' + (item.price * item.qty).toLocaleString('es-CR')
+            Precio: '₡' + getSellingPrice(item).toLocaleString('es-CR'),
+            Subtotal: '₡' + (getSellingPrice(item) * item.qty).toLocaleString('es-CR')
         })));
         console.log('Total: ₡' + subtotal.toLocaleString('es-CR'));
     }
@@ -374,7 +408,7 @@ function saveOrder(orderId, dateStr, items, subtotal, receiptHtml) {
     orders.unshift({
         id: orderId,
         date: dateStr,
-        items: items.map(item => ({ id: item.id, name: item.name, code: item.code, qty: item.qty, price: item.price, sourceUrl: item.sourceUrl })),
+        items: items.map(item => ({ id: item.id, name: item.name, code: item.code, qty: item.qty, price: item.price, costPrice: getCostPrice(item), sellingPrice: getSellingPrice(item), sourceUrl: item.sourceUrl })),
         subtotal: subtotal,
         receiptHtml: receiptHtml,
         status: 'pending',
@@ -405,7 +439,7 @@ function renderOrders() {
         return;
     }
     container.innerHTML = orders.map((o, idx) => {
-        const total = o.items.reduce((s, item) => s + item.price * item.qty, 0);
+        const total = o.items.reduce((s, item) => s + (item.sellingPrice || item.price) * item.qty, 0);
         const itemCount = o.items.reduce((s, item) => s + item.qty, 0);
         return '<div class="order-card ' + o.status + '" data-index="' + idx + '">'
             + '<div class="order-card-header">'
@@ -616,7 +650,7 @@ function orderAllFromSupplier() {
         id: 'ALL-' + Date.now().toString(36).toUpperCase(),
         date: new Date().toLocaleString('es-CR'),
         items: combined,
-        subtotal: combined.reduce((s, i) => s + i.price * i.qty, 0)
+        subtotal: combined.reduce((s, i) => s + (i.sellingPrice || i.price) * i.qty, 0)
     };
     orderFromSupplier(virtualOrder);
 }
@@ -685,6 +719,170 @@ function initHero() {
 function resetHeroTimer() {
     clearInterval(heroTimer);
     heroTimer = setInterval(nextSlide, 5000);
+}
+
+// Price Comparator
+let priceCompRunning = false;
+
+document.getElementById('priceComparerBtn').addEventListener('click', openPriceComparer);
+document.getElementById('priceCompClose').addEventListener('click', closePriceComparer);
+document.getElementById('priceCompOverlay').addEventListener('click', closePriceComparer);
+
+function openPriceComparer() {
+    if (!isDevMode) return;
+    const panel = document.getElementById('priceComparer');
+    const overlay = document.getElementById('priceCompOverlay');
+    panel.classList.add('open');
+    overlay.classList.add('open');
+    document.body.classList.add('no-scroll');
+    initPriceComparer();
+}
+
+function closePriceComparer() {
+    priceCompRunning = false;
+    document.getElementById('priceComparer').classList.remove('open');
+    document.getElementById('priceCompOverlay').classList.remove('open');
+    document.body.classList.remove('no-scroll');
+}
+
+function initPriceComparer() {
+    const catSelect = document.getElementById('priceCompCat');
+    const cats = [...new Set(products.map(p => p.category).filter(Boolean))].sort();
+    catSelect.innerHTML = '<option value="">Todas las categorías</option>'
+        + cats.map(c => '<option value="' + c + '">' + c + ' (' + products.filter(p => p.category === c).length + ')</option>').join('');
+
+    document.getElementById('priceCompSummary').textContent = products.length + ' productos en catálogo';
+    document.getElementById('priceCompResults').innerHTML = '<p style="text-align:center;color:#999;padding:2rem">Haz clic en "Iniciar comparación" para verificar precios contra PlanetGroupCR</p>';
+}
+
+document.getElementById('priceCompStart').addEventListener('click', startPriceComparison);
+
+async function startPriceComparison() {
+    if (priceCompRunning) return;
+    const catFilter = document.getElementById('priceCompCat').value;
+    let list = products;
+    if (catFilter) list = list.filter(p => p.category === catFilter);
+
+    if (list.length === 0) {
+        document.getElementById('priceCompResults').innerHTML = '<p style="text-align:center;color:#999;padding:2rem">No hay productos en esta categoría</p>';
+        return;
+    }
+
+    // Use CORS proxy to fetch PlanetGroupCR prices
+    const proxyBase = 'https://api.allorigins.win/raw?url=';
+    const batchSize = 5;
+    const total = list.length;
+    priceCompRunning = true;
+
+    document.getElementById('priceCompStart').textContent = 'Comparando...';
+    document.getElementById('priceCompStart').disabled = true;
+    document.getElementById('priceCompProgress').style.display = 'flex';
+    document.getElementById('priceCompResults').innerHTML = '';
+
+    let results = [];
+    let processed = 0;
+    let updated = 0;
+
+    for (let i = 0; i < total; i += batchSize) {
+        if (!priceCompRunning) break;
+        const batch = list.slice(i, i + batchSize);
+        const promises = batch.map(async (p) => {
+            if (!p.sourceUrl) return { product: p, status: 'no-source', pgcrPrice: null, ourCost: getCostPrice(p), ourPrice: getSellingPrice(p), margin: getMarginPercent(p) };
+            const match = p.sourceUrl.match(/item_id=(\d+)/);
+            if (!match) return { product: p, status: 'no-item-id', pgcrPrice: null, ourCost: getCostPrice(p), ourPrice: getSellingPrice(p), margin: getMarginPercent(p) };
+            const itemId = match[1];
+            try {
+                const resp = await fetch(proxyBase + encodeURIComponent('https://planetgroupcr.com/item_shop.php?item_id=' + itemId), { signal: AbortSignal.timeout(10000) });
+                const html = await resp.text();
+                // Extract logged-in price: first &cent; price after loading the page
+                const priceMatch = html.match(/<h4[^>]*><strong>&cent;([0-9.]+),/);
+                if (priceMatch) {
+                    const pgcrPrice = parseInt(priceMatch[1].replace(/\./g, ''));
+                    const ourCost = getCostPrice(p);
+                    const diff = pgcrPrice !== ourCost;
+                    if (diff) updated++;
+                    return { product: p, status: diff ? 'changed' : 'same', pgcrPrice, ourCost, ourPrice: getSellingPrice(p), margin: getMarginPercent(p) };
+                }
+                // Try public price
+                const pubMatch = html.match(/<td>&cent;([0-9.]+),/);
+                if (pubMatch) {
+                    const pgcrPrice = parseInt(pubMatch[1].replace(/\./g, ''));
+                    return { product: p, status: 'public-only', pgcrPrice, ourCost: getCostPrice(p), ourPrice: getSellingPrice(p), margin: getMarginPercent(p) };
+                }
+                return { product: p, status: 'no-price', pgcrPrice: null, ourCost: getCostPrice(p), ourPrice: getSellingPrice(p), margin: getMarginPercent(p) };
+            } catch (e) {
+                return { product: p, status: 'error', pgcrPrice: null, ourCost: getCostPrice(p), ourPrice: getSellingPrice(p), margin: getMarginPercent(p), error: e.message };
+            }
+        });
+
+        const batchResults = await Promise.all(promises);
+        results = results.concat(batchResults);
+        processed += batch.length;
+
+        const pct = Math.round(processed / total * 100);
+        document.getElementById('priceCompProgressBar').style.width = pct + '%';
+        document.getElementById('priceCompProgressText').textContent = pct + '% (' + processed + '/' + total + ')';
+
+        // Render current results
+        renderPriceCompResults(results, processed, total, updated);
+
+        // Small delay between batches to avoid rate limiting
+        if (i + batchSize < total && priceCompRunning) {
+            await new Promise(r => setTimeout(r, 1500));
+        }
+    }
+
+    priceCompRunning = false;
+    document.getElementById('priceCompStart').textContent = 'Iniciar comparación';
+    document.getElementById('priceCompStart').disabled = false;
+}
+
+function renderPriceCompResults(results, processed, total, updated) {
+    const container = document.getElementById('priceCompResults');
+    const changed = results.filter(r => r.status === 'changed');
+    const same = results.filter(r => r.status === 'same');
+    const errors = results.filter(r => r.status === 'error' || r.status === 'no-price');
+    const noSource = results.filter(r => r.status === 'no-source');
+
+    let html = '<div class="price-comp-stats">'
+        + '<span class="stat-total">Total: ' + results.length + '</span>'
+        + '<span class="stat-changed">Cambiados: ' + changed.length + '</span>'
+        + '<span class="stat-same">Sin cambios: ' + same.length + '</span>'
+        + '<span class="stat-errors">Errores: ' + errors.length + '</span>'
+        + '<span class="stat-nosource">Sin origen: ' + noSource.length + '</span>'
+        + '</div>';
+
+    if (results.length === 0) {
+        container.innerHTML = html + '<p style="text-align:center;color:#999;padding:1rem">Esperando resultados...</p>';
+        return;
+    }
+
+    // Show products where price changed
+    const itemsToShow = changed.length > 0 ? changed : results.slice(0, 50);
+    html += '<div class="price-comp-table-wrap"><table class="price-comp-table">'
+        + '<tr><th>Producto</th><th>Código</th><th>PGCR actual</th><th>Nuestro costo</th><th>Nuestra venta</th><th>Margen</th><th>Estado</th></tr>';
+
+    itemsToShow.forEach(r => {
+        const p = r.product;
+        const statusClass = r.status === 'changed' ? 'status-changed' : (r.status === 'same' ? 'status-same' : 'status-error');
+        const statusText = r.status === 'changed' ? '⚠ CAMBIÓ' : (r.status === 'same' ? '✓ OK' : (r.status === 'error' ? '✗ Error' : (r.status === 'no-source' ? '— Sin URL' : '? ' + r.status)));
+        html += '<tr class="' + statusClass + '">'
+            + '<td title="' + p.name + '">' + p.name.substring(0, 40) + (p.name.length > 40 ? '…' : '') + '</td>'
+            + '<td>' + (p.code || '—') + '</td>'
+            + '<td>' + (r.pgcrPrice ? '₡' + r.pgcrPrice.toLocaleString('es-CR') : '—') + '</td>'
+            + '<td>' + (r.ourCost ? '₡' + r.ourCost.toLocaleString('es-CR') : '—') + '</td>'
+            + '<td>' + (r.ourPrice ? '₡' + r.ourPrice.toLocaleString('es-CR') : '—') + '</td>'
+            + '<td>' + r.margin + '%</td>'
+            + '<td class="' + statusClass + '">' + statusText + '</td>'
+            + '</tr>';
+    });
+
+    html += '</table></div>';
+    if (changed.length === 0 && results.length > 50) {
+        html += '<p style="text-align:center;color:#999;padding:0.5rem">Mostrando primeros 50 resultados. Sin cambios detectados hasta ahora.</p>';
+    }
+
+    container.innerHTML = html;
 }
 
 init();
