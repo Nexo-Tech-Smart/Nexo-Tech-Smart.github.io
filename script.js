@@ -2,6 +2,8 @@ let products = [];
 let cart = {};
 let activeCategory = 'Todos';
 let isDevMode = false;
+let heroIndex = 0;
+let heroTimer;
 
 async function init() {
     try {
@@ -14,7 +16,9 @@ async function init() {
         ];
     }
     renderFilters();
+    renderMegaMenu();
     renderProducts(document.getElementById('searchInput').value);
+    initHero();
 }
 
 function formatPrice(price) {
@@ -23,6 +27,29 @@ function formatPrice(price) {
 
 function getOriginalPrice(p) {
     return Math.round((p.priceCRC || p.price) / 1.3 * 100) / 100;
+}
+
+function getDiscountPercent(p) {
+    const orig = getOriginalPrice(p);
+    const markup = p.priceCRC || p.price;
+    return Math.round((1 - orig / markup) * 100);
+}
+
+function getRandomRating() {
+    const stars = (3.5 + Math.random() * 1.5).toFixed(1);
+    const reviews = Math.floor(Math.random() * 500) + 10;
+    return { stars: parseFloat(stars), reviews };
+}
+
+function renderStars(rating) {
+    const full = Math.floor(rating);
+    const half = rating - full >= 0.5;
+    let s = '';
+    for (let i = 0; i < full; i++) s += '★';
+    if (half) s += '☆';
+    const empty = 5 - full - (half ? 1 : 0);
+    for (let i = 0; i < empty; i++) s += '☆';
+    return s;
 }
 
 function renderFilters() {
@@ -39,7 +66,31 @@ function renderFilters() {
         document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         activeCategory = btn.dataset.cat;
+        document.getElementById('sectionTitle').textContent = activeCategory === 'Todos' ? 'Todos los productos' : activeCategory;
         renderProducts(document.getElementById('searchInput').value);
+        closeMegaMenu();
+    });
+}
+
+function renderMegaMenu() {
+    const cats = [...new Set(products.map(p => p.category).filter(Boolean))].sort();
+    const container = document.getElementById('megaMenuList');
+    container.innerHTML = '<div class="mega-menu-item all" data-cat="Todos">Todos los productos<span class="mega-count">' + products.length + '</span></div>' +
+        cats.map(c => {
+            const count = products.filter(p => p.category === c).length;
+            return '<div class="mega-menu-item" data-cat="' + c + '">' + c + '<span class="mega-count">' + count + '</span></div>';
+        }).join('');
+    container.addEventListener('click', e => {
+        const item = e.target.closest('.mega-menu-item');
+        if (!item) return;
+        const cat = item.dataset.cat;
+        document.querySelectorAll('.filter-btn').forEach(b => {
+            b.classList.toggle('active', b.dataset.cat === cat);
+        });
+        activeCategory = cat;
+        document.getElementById('sectionTitle').textContent = cat === 'Todos' ? 'Todos los productos' : cat;
+        renderProducts(document.getElementById('searchInput').value);
+        closeMegaMenu();
     });
 }
 
@@ -59,17 +110,18 @@ function renderProducts(search) {
     }
     grid.innerHTML = list.map(p => {
         const markup = p.priceCRC || p.price;
-        const original = getOriginalPrice(p);
+        const rating = getRandomRating();
         const priceHtml = isDevMode
-            ? '<div class="price-dev"><span class="original">&#8353;' + original.toLocaleString('es-CR', {minimumFractionDigits:2}) + '</span> &rarr; <span class="markup">&#8353;' + markup.toLocaleString('es-CR', {minimumFractionDigits:2}) + '</span></div>'
-            : '<p class="price">' + formatPrice(markup) + '</p>';
+            ? '<div class="price-dev"><span class="original">&#8353;' + getOriginalPrice(p).toLocaleString('es-CR', {minimumFractionDigits:2}) + '</span> &rarr; <span class="markup">&#8353;' + markup.toLocaleString('es-CR', {minimumFractionDigits:2}) + '</span></div>'
+            : '<div class="price-row"><span class="price">' + formatPrice(markup) + '</span></div>';
         return '<div class="product-card" onclick="openModal(' + p.id + ')">'
+            + '<span class="badge-free-ship">Envío gratis</span>'
             + '<img src="' + p.img + '" alt="' + p.name.replace(/"/g, '&quot;') + '" loading="lazy">'
             + '<div class="info">'
             + '<h3>' + p.name + '</h3>'
+            + '<div class="rating"><span class="stars">' + renderStars(rating.stars) + '</span><span class="reviews">(' + rating.reviews + ')</span></div>'
             + priceHtml
             + (p.code ? '<small>' + p.code + '</small>' : '')
-            + '<span class="ship-badge">Envío gratis</span>'
             + (isDevMode && p.sourceUrl ? '<a href="' + p.sourceUrl + '" target="_blank" class="source-link" onclick="event.stopPropagation()">&#128279; Origen</a>' : '')
             + '<button class="btn-sm" onclick="event.stopPropagation();addToCart(' + p.id + ')">Agregar</button>'
             + '</div></div>';
@@ -81,13 +133,16 @@ function openModal(id) {
     if (!p) return;
     const markup = p.priceCRC || p.price;
     const original = getOriginalPrice(p);
+    const rating = getRandomRating();
+    const discount = getDiscountPercent(p);
     const body = document.getElementById('modalBody');
     body.innerHTML = '<img src="' + p.img + '" alt="' + p.name.replace(/"/g, '&quot;') + '">'
         + '<h2>' + p.name + '</h2>'
         + '<div class="modal-meta">'
+        + '<span class="stars" style="color:#f90;font-size:1.1rem">' + renderStars(rating.stars) + '</span> <span style="color:#999;font-size:0.85rem">' + rating.stars + ' (' + rating.reviews + ' reseñas)</span><br>'
         + (p.brand ? '<span><strong>Marca:</strong> ' + p.brand + '</span><br>' : '')
-        + (p.code ? '<span><strong>C&oacute;digo:</strong> ' + p.code + '</span><br>' : '')
-        + '<span><strong>Categor&iacute;a:</strong> ' + p.category + '</span>'
+        + (p.code ? '<span><strong>Código:</strong> ' + p.code + '</span><br>' : '')
+        + '<span><strong>Categoría:</strong> ' + p.category + '</span>'
         + '</div>'
         + (isDevMode
             ? '<div class="modal-price-dev">'
@@ -222,7 +277,7 @@ document.getElementById('modalClose').addEventListener('click', closeModal);
 document.getElementById('modalOverlay').addEventListener('click', closeModal);
 
 document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { closeModal(); closeCart(); }
+    if (e.key === 'Escape') { closeModal(); closeCart(); closeMegaMenu(); }
 });
 
 document.querySelectorAll('.footer-col a[href^="#"], .btn-hero').forEach(link => {
@@ -233,5 +288,55 @@ document.querySelectorAll('.footer-col a[href^="#"], .btn-hero').forEach(link =>
         closeCart();
     });
 });
+
+function openMegaMenu() {
+    document.getElementById('catMegaMenu').classList.add('open');
+    document.getElementById('megaOverlay').classList.add('open');
+    document.body.classList.add('no-scroll');
+}
+
+function closeMegaMenu() {
+    document.getElementById('catMegaMenu').classList.remove('open');
+    document.getElementById('megaOverlay').classList.remove('open');
+    document.body.classList.remove('no-scroll');
+}
+
+document.getElementById('catMenuBtn').addEventListener('click', openMegaMenu);
+document.getElementById('megaClose').addEventListener('click', closeMegaMenu);
+document.getElementById('megaOverlay').addEventListener('click', closeMegaMenu);
+
+function goToSlide(index) {
+    const slides = document.querySelectorAll('.hero-slide');
+    const dots = document.querySelectorAll('.hero-dot');
+    if (index < 0) index = slides.length - 1;
+    if (index >= slides.length) index = 0;
+    slides.forEach(s => s.classList.remove('active'));
+    dots.forEach(d => d.classList.remove('active'));
+    slides[index].classList.add('active');
+    dots[index].classList.add('active');
+    heroIndex = index;
+}
+
+function nextSlide() { goToSlide(heroIndex + 1); }
+function prevSlide() { goToSlide(heroIndex - 1); }
+
+function initHero() {
+    const slides = document.querySelectorAll('.hero-slide');
+    const dotsContainer = document.getElementById('heroDots');
+    slides.forEach((_, i) => {
+        const dot = document.createElement('span');
+        dot.className = 'hero-dot' + (i === 0 ? ' active' : '');
+        dot.addEventListener('click', () => goToSlide(i));
+        dotsContainer.appendChild(dot);
+    });
+    document.getElementById('heroNext').addEventListener('click', () => { nextSlide(); resetHeroTimer(); });
+    document.getElementById('heroPrev').addEventListener('click', () => { prevSlide(); resetHeroTimer(); });
+    heroTimer = setInterval(nextSlide, 5000);
+}
+
+function resetHeroTimer() {
+    clearInterval(heroTimer);
+    heroTimer = setInterval(nextSlide, 5000);
+}
 
 init();

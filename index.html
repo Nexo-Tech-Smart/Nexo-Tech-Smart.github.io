@@ -11,10 +11,18 @@
     <header class="top-header">
         <div class="header-inner">
             <div class="h-left">
-                <div class="logo">Nexo Tech Smart</div>
+                <div class="logo">Nexo<span>Tech</span></div>
+                <button class="cat-menu-btn" id="catMenuBtn">
+                    <span class="hamburger">&#9776;</span>
+                    <span class="cat-menu-label">Categorías</span>
+                </button>
             </div>
             <div class="h-center">
                 <div class="search-wrap">
+                    <button class="search-cat-btn" id="searchCatBtn">
+                        <span id="searchCatLabel">Todas</span>
+                        <span class="arrow-down">&#9660;</span>
+                    </button>
                     <input type="text" id="searchInput" placeholder="Buscar productos..." class="search-input">
                     <button class="search-btn">&#128269;</button>
                 </div>
@@ -33,24 +41,52 @@
         </div>
     </header>
 
-    <nav class="cat-nav">
-        <div class="cat-nav-inner">
-            <div id="categoryFilters" class="cat-filters"></div>
+    <div class="cat-mega-menu" id="catMegaMenu">
+        <div class="mega-menu-inner">
+            <div class="mega-menu-header">
+                <h3>Categorías</h3>
+                <button class="mega-close" id="megaClose">&times;</button>
+            </div>
+            <div id="megaMenuList" class="mega-menu-list"></div>
         </div>
-    </nav>
+    </div>
+    <div class="mega-overlay" id="megaOverlay"></div>
 
     <section class="hero">
-        <div class="hero-slide">
-            <div class="hero-text">
-                <h2>Nexo Tech Smart</h2>
-                <p>Soluciones inteligentes para tu hogar</p>
-                <a href="#productos" class="btn-hero">Ver productos</a>
+        <div class="hero-slider" id="heroSlider">
+            <div class="hero-slide active">
+                <div class="hero-text">
+                    <h2>Nexo Tech Smart</h2>
+                    <p>Soluciones inteligentes para tu hogar</p>
+                    <a href="#productos" class="btn-hero">Ver productos</a>
+                </div>
+            </div>
+            <div class="hero-slide">
+                <div class="hero-text">
+                    <h2>Domótica Profesional</h2>
+                    <p>Automatiza tu hogar con nuestros kits inteligentes</p>
+                    <a href="#productos" class="btn-hero">Descubrir</a>
+                </div>
+            </div>
+            <div class="hero-slide">
+                <div class="hero-text">
+                    <h2>Seguridad Inteligente</h2>
+                    <p>Cámaras, sensores y alarmas para tu tranquilidad</p>
+                    <a href="#productos" class="btn-hero">Explorar</a>
+                </div>
             </div>
         </div>
+        <button class="hero-arrow hero-arrow-left" id="heroPrev">&#10094;</button>
+        <button class="hero-arrow hero-arrow-right" id="heroNext">&#10095;</button>
+        <div class="hero-dots" id="heroDots"></div>
     </section>
 
     <section id="productos" class="section">
         <div class="container">
+            <div class="section-header">
+                <h2 class="section-title" id="sectionTitle">Todos los productos</h2>
+                <div id="categoryFilters" class="cat-filters"></div>
+            </div>
             <div id="productGrid" class="product-grid"></div>
         </div>
     </section>
@@ -81,15 +117,30 @@
             <div class="footer-col">
                 <h4>Nexo Tech Smart</h4>
                 <p>Tecnología e innovación para tu hogar y negocio.</p>
+                <div class="footer-social">
+                    <span>FB</span>
+                    <span>IG</span>
+                    <span>WA</span>
+                </div>
             </div>
             <div class="footer-col">
-                <h4>Enlaces</h4>
-                <a href="#inicio">Inicio</a>
-                <a href="#productos">Productos</a>
+                <h4>Productos</h4>
+                <a href="#productos">Todos los productos</a>
+                <a href="#productos">Ofertas especiales</a>
+                <a href="#productos">Novedades</a>
+                <a href="#productos">M&aacute;s vendidos</a>
+            </div>
+            <div class="footer-col">
+                <h4>Ayuda</h4>
+                <a href="#productos">C&oacute;mo comprar</a>
+                <a href="#productos">M&eacute;todos de pago</a>
+                <a href="#productos">Env&iacute;os</a>
+                <a href="#productos">Garant&iacute;as</a>
             </div>
             <div class="footer-col">
                 <h4>Contacto</h4>
-                <p>San José, Costa Rica</p>
+                <p>San Jos&eacute;, Costa Rica</p>
+                <p>Lun - Vie: 8:00 - 17:00</p>
             </div>
         </div>
         <div class="footer-bottom">
