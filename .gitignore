@@ -6,3 +6,4 @@ tmp/
 merge_json.ps1
 scrape_category.ps1
 scrape_resume.ps1
+add_urls.ps1
