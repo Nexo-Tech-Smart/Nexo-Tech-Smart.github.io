@@ -267,11 +267,79 @@ function closeCart() {
 
 document.getElementById('checkoutBtn').addEventListener('click', () => {
     if (Object.keys(cart).length === 0) return;
-    alert('Gracias por tu compra! Te contactaremos para coordinar la entrega.');
+    generateOrder();
+});
+
+function generateOrder() {
+    const items = Object.entries(cart).map(([id, qty]) => {
+        const p = products.find(x => x.id === +id);
+        return { ...p, qty };
+    });
+
+    const orderId = 'ORD-' + Date.now().toString(36).toUpperCase();
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('es-CR', { year: 'numeric', month: 'long', day: 'numeric' });
+    const timeStr = now.toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' });
+
+    const subtotal = items.reduce((sum, item) => sum + (item.priceCRC || item.price) * item.qty, 0);
+
+    const receiptHtml = '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">'
+        + '<title>Orden ' + orderId + ' - Nexo Tech Smart</title>'
+        + '<style>'
+        + 'body{font-family:Arial,sans-serif;max-width:700px;margin:0 auto;padding:20px;color:#333}'
+        + '.header{text-align:center;border-bottom:2px solid #FF4747;padding-bottom:16px;margin-bottom:20px}'
+        + '.header h1{color:#191919;font-size:1.5rem;margin:0}'
+        + '.header span{color:#FF4747}'
+        + '.order-info{display:flex;justify-content:space-between;margin-bottom:16px;font-size:0.9rem;color:#666}'
+        + 'table{width:100%;border-collapse:collapse;margin-bottom:16px}'
+        + 'th{background:#f5f5f5;text-align:left;padding:8px 10px;font-size:0.85rem;border-bottom:2px solid #ddd}'
+        + 'td{padding:8px 10px;border-bottom:1px solid #eee;font-size:0.9rem}'
+        + 'td:last-child,th:last-child{text-align:right}'
+        + '.total-row td{font-weight:700;font-size:1rem;border-top:2px solid #333;border-bottom:none;padding-top:10px}'
+        + '.total-row td:last-child{color:#FF4747;font-size:1.2rem}'
+        + '.footer{text-align:center;margin-top:24px;font-size:0.8rem;color:#999;border-top:1px solid #eee;padding-top:16px}'
+        + '.dev-note{background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:12px;margin-top:16px;font-size:0.85rem}'
+        + '</style></head><body>'
+        + '<div class="header"><h1>Nexo<span>Tech</span> Smart</h1><p style="color:#666;font-size:0.9rem">Orden de Compra</p></div>'
+        + '<div class="order-info"><span><strong>Orden:</strong> ' + orderId + '</span><span><strong>Fecha:</strong> ' + dateStr + ' ' + timeStr + '</span></div>'
+        + '<table><tr><th>Producto</th><th>Código</th><th>Cant.</th><th>Precio</th><th>Subtotal</th></tr>'
+        + items.map(item => {
+            const price = item.priceCRC || item.price;
+            return '<tr><td>' + item.name + '</td><td style="color:#999;font-size:0.8rem">' + (item.code || '—') + '</td><td>' + item.qty + '</td><td>' + formatPrice(price) + '</td><td>' + formatPrice(price * item.qty) + '</td></tr>';
+        }).join('')
+        + '<tr class="total-row"><td colspan="4">Total</td><td>' + formatPrice(subtotal) + '</td></tr>'
+        + '</table>'
+        + (isDevMode ? '<div class="dev-note"><strong>🔧 Copia para desarrollador</strong><br>Orden generada el ' + dateStr + ' a las ' + timeStr + '<br>Cliente: Vista previa modo desarrollador</div>' : '')
+        + '<div class="footer"><p>Nexo Tech Smart - San José, Costa Rica</p><p>Gracias por tu compra</p></div>'
+        + '</body></html>';
+
+    const blob = new Blob([receiptHtml], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'orden-' + orderId.toLowerCase() + '.html';
+    a.click();
+    URL.revokeObjectURL(url);
+
+    if (isDevMode) {
+        console.log('=== ORDEN DE COMPRA (DESARROLLADOR) ===');
+        console.log('Orden:', orderId);
+        console.log('Fecha:', dateStr, timeStr);
+        console.table(items.map(item => ({
+            Producto: item.name,
+            Codigo: item.code || '—',
+            Cantidad: item.qty,
+            Precio: '₡' + ((item.priceCRC || item.price)).toLocaleString('es-CR'),
+            Subtotal: '₡' + ((item.priceCRC || item.price) * item.qty).toLocaleString('es-CR')
+        })));
+        console.log('Total: ₡' + subtotal.toLocaleString('es-CR'));
+        window.open(url, '_blank');
+    }
+
     cart = {};
     updateCartUI();
     closeCart();
-});
+}
 
 document.getElementById('modalClose').addEventListener('click', closeModal);
 document.getElementById('modalOverlay').addEventListener('click', closeModal);
