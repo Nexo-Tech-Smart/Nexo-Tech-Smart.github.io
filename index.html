@@ -28,6 +28,10 @@
                 </div>
             </div>
             <div class="h-right">
+                <button id="ordersBtn" class="orders-btn" title="Órdenes de compra">
+                    <span class="orders-icon">&#128230;</span>
+                    <span class="orders-badge" id="ordersCount">0</span>
+                </button>
                 <label class="mode-toggle" title="Cambiar modo">
                     <span class="mode-label" id="modeLabel">Cliente</span>
                     <input type="checkbox" id="modeSwitch">
@@ -90,6 +94,19 @@
             <div id="productGrid" class="product-grid"></div>
         </div>
     </section>
+
+    <aside id="ordersPanel" class="orders-panel">
+        <div class="orders-header">
+            <h2>&#128230; Órdenes de Compra</h2>
+            <button id="closeOrders" class="orders-close">&times;</button>
+        </div>
+        <div class="orders-toolbar">
+            <span id="ordersSummary" class="orders-summary">0 órdenes</span>
+            <button id="clearOrdersBtn" class="orders-clear-btn" title="Eliminar todas las órdenes">Limpiar todo</button>
+        </div>
+        <div id="ordersList" class="orders-list"></div>
+    </aside>
+    <div id="ordersOverlay" class="orders-overlay"></div>
 
     <aside id="cartSidebar" class="cart-sidebar">
         <div class="cart-header">

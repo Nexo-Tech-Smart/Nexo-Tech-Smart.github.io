@@ -226,6 +226,8 @@ document.getElementById('modeSwitch').addEventListener('change', async e => {
     if (!e.target.checked) {
         isDevMode = false;
         document.getElementById('modeLabel').textContent = 'Cliente';
+        document.getElementById('ordersBtn').classList.remove('dev-visible');
+        closeOrdersPanel();
         renderProducts(document.getElementById('searchInput').value);
         return;
     }
@@ -244,6 +246,8 @@ document.getElementById('modeSwitch').addEventListener('change', async e => {
     if (passHash === DEV_PASS_HASH) {
         isDevMode = true;
         document.getElementById('modeLabel').textContent = 'Desarrollador';
+        document.getElementById('ordersBtn').classList.add('dev-visible');
+        updateOrdersBadge();
         renderProducts(document.getElementById('searchInput').value);
     } else {
         alert('Credenciales incorrectas');
@@ -342,16 +346,122 @@ function generateOrder() {
         console.log('Total: ₡' + subtotal.toLocaleString('es-CR'));
     }
 
+    saveOrder(orderId, dateStr + ' ' + timeStr, items, subtotal, receiptHtml);
+
     cart = {};
     updateCartUI();
     closeCart();
 }
 
+function saveOrder(orderId, dateStr, items, subtotal, receiptHtml) {
+    const orders = JSON.parse(localStorage.getItem('nexoOrders') || '[]');
+    orders.unshift({
+        id: orderId,
+        date: dateStr,
+        items: items.map(item => ({ name: item.name, code: item.code, qty: item.qty, price: item.price })),
+        subtotal: subtotal,
+        receiptHtml: receiptHtml,
+        status: 'pending',
+        createdAt: Date.now()
+    });
+    localStorage.setItem('nexoOrders', JSON.stringify(orders));
+    updateOrdersBadge();
+}
+
+function getOrders() {
+    return JSON.parse(localStorage.getItem('nexoOrders') || '[]');
+}
+
+function updateOrdersBadge() {
+    const orders = getOrders();
+    const pending = orders.filter(o => o.status === 'pending').length;
+    const badge = document.getElementById('ordersCount');
+    badge.textContent = pending;
+}
+
+function renderOrders() {
+    const orders = getOrders();
+    const container = document.getElementById('ordersList');
+    const summary = document.getElementById('ordersSummary');
+    summary.textContent = orders.length + ' órdenes' + (orders.length > 0 ? ' (' + orders.filter(o => o.status === 'pending').length + ' pendientes)' : '');
+    if (orders.length === 0) {
+        container.innerHTML = '<p class="orders-empty">No hay órdenes registradas</p>';
+        return;
+    }
+    container.innerHTML = orders.map((o, idx) => {
+        const total = o.items.reduce((s, item) => s + item.price * item.qty, 0);
+        const itemCount = o.items.reduce((s, item) => s + item.qty, 0);
+        return '<div class="order-card ' + o.status + '" data-index="' + idx + '">'
+            + '<div class="order-card-header">'
+            + '<span class="order-card-id">' + o.id + '</span>'
+            + '<span class="order-card-date">' + o.date + '</span>'
+            + '</div>'
+            + '<div class="order-card-info">'
+            + '<span>&#128722; ' + itemCount + ' artículos</span>'
+            + '<span>&#8353;' + total.toLocaleString('es-CR', {minimumFractionDigits:2}) + '</span>'
+            + '<span>' + (o.status === 'pending' ? '&#9203; Pendiente' : '&#9989; Procesada') + '</span>'
+            + '</div>'
+            + '<div class="order-card-actions">'
+            + '<button class="btn-view" data-action="view" data-idx="' + idx + '">&#128065; Ver</button>'
+            + '<button class="btn-pdf" data-action="pdf" data-idx="' + idx + '">&#128196; PDF</button>'
+            + (o.status === 'pending' ? '<button class="btn-process" data-action="process" data-idx="' + idx + '">&#9989; Procesar</button>' : '')
+            + '</div></div>';
+    }).join('');
+
+    container.querySelectorAll('[data-action]').forEach(btn => {
+        btn.addEventListener('click', e => {
+            const action = btn.dataset.action;
+            const idx = parseInt(btn.dataset.idx);
+            const orders = getOrders();
+            const order = orders[idx];
+            if (!order) return;
+            if (action === 'view') {
+                const w = window.open('', '_blank');
+                if (w) { w.document.write(order.receiptHtml); w.document.close(); }
+            } else if (action === 'pdf') {
+                const w = window.open('', '_blank');
+                if (w) { w.document.write(order.receiptHtml); w.document.close(); }
+            } else if (action === 'process') {
+                if (confirm('Marcar orden ' + order.id + ' como procesada?')) {
+                    orders[idx].status = 'processed';
+                    localStorage.setItem('nexoOrders', JSON.stringify(orders));
+                    renderOrders();
+                    updateOrdersBadge();
+                }
+            }
+        });
+    });
+}
+
+function openOrdersPanel() {
+    renderOrders();
+    document.getElementById('ordersPanel').classList.add('open');
+    document.getElementById('ordersOverlay').classList.add('open');
+    document.body.classList.add('no-scroll');
+}
+
+function closeOrdersPanel() {
+    document.getElementById('ordersPanel').classList.remove('open');
+    document.getElementById('ordersOverlay').classList.remove('open');
+    document.body.classList.remove('no-scroll');
+}
+
+document.getElementById('ordersBtn').addEventListener('click', openOrdersPanel);
+document.getElementById('closeOrders').addEventListener('click', closeOrdersPanel);
+document.getElementById('ordersOverlay').addEventListener('click', closeOrdersPanel);
+document.getElementById('clearOrdersBtn').addEventListener('click', () => {
+    if (confirm('Eliminar todas las órdenes de compra?')) {
+        localStorage.removeItem('nexoOrders');
+        renderOrders();
+        updateOrdersBadge();
+    }
+});
+
 document.getElementById('modalClose').addEventListener('click', closeModal);
 document.getElementById('modalOverlay').addEventListener('click', closeModal);
 
 document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { closeModal(); closeCart(); closeMegaMenu(); }
+    if (e.key === 'Escape') { closeModal(); closeCart(); closeMegaMenu(); closeOrdersPanel(); }
 });
 
 document.querySelectorAll('.footer-col a[href^="#"], .btn-hero').forEach(link => {
