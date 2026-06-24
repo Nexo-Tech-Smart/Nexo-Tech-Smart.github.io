@@ -70,6 +70,7 @@ function renderProducts(search) {
             + priceHtml
             + (p.code ? '<small>' + p.code + '</small>' : '')
             + '<span class="ship-badge">Envío gratis</span>'
+            + (isDevMode && p.sourceUrl ? '<a href="' + p.sourceUrl + '" target="_blank" class="source-link" onclick="event.stopPropagation()">&#128279; Origen</a>' : '')
             + '<button class="btn-sm" onclick="event.stopPropagation();addToCart(' + p.id + ')">Agregar</button>'
             + '</div></div>';
     }).join('');
@@ -95,6 +96,9 @@ function openModal(id) {
                 + '<p class="diff"><span class="label">Diferencia (+30%):</span><span class="value red">&#8353;' + (markup - original).toLocaleString('es-CR', {minimumFractionDigits:2}) + '</span></p>'
             + '</div>'
             : '<div class="modal-price">' + formatPrice(markup) + '</div>')
+        + (isDevMode && p.sourceUrl
+            ? '<a href="' + p.sourceUrl + '" target="_blank" class="btn-sm btn-source" style="display:inline-block;text-decoration:none;margin-bottom:10px;background:#28a745">&#128279; Abrir en PlanetGroupCR</a><br>'
+            : '')
         + '<div class="modal-actions">'
         + '<button class="btn-sm" onclick="closeModal();addToCart(' + p.id + ')">Agregar al carrito</button>'
         + '</div>';

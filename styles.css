@@ -273,6 +273,25 @@ body {
 .product-card .price-dev .original { color: #28a745; font-weight: 700; }
 .product-card .price-dev .markup { color: #FF4747; font-weight: 700; }
 .product-card small { color: #aaa; font-size: 0.72rem; margin-top: 2px; }
+.source-link {
+    font-size: 0.72rem;
+    color: #28a745;
+    text-decoration: none;
+    font-weight: 600;
+    margin-top: 2px;
+}
+.source-link:hover { text-decoration: underline; }
+.btn-source {
+    background: #28a745;
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-align: center;
+    transition: background 0.2s;
+}
+.btn-source:hover { background: #218838; }
 .product-card .btn-sm {
     margin-top: 8px;
     padding: 6px 14px;
