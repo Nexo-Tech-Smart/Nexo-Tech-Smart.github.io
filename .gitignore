@@ -2,3 +2,7 @@ git/
 git-portable.exe
 gh-cli/
 check_*.ps1
+tmp/
+merge_json.ps1
+scrape_category.ps1
+scrape_resume.ps1
