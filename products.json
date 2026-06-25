@@ -9,7 +9,8 @@
         "code":  "AMCBCD0010UM",
         "brand":  "AMELY",
         "priceCRC":  4006.6,
-        "sourceUrl":  "https://planetgroupcr.com/index.php?item_id=33935"
+        "sourceUrl":  "https://planetgroupcr.com/index.php?item_id=33935",
+        "description":  "Adaptador DisplayPort a VGA con conector HDMI para HDTV. Compatible con resoluciones hasta 1080p. Soporta audio digital. Plug & Play sin necesidad de drivers. Ideal para conectar monitores antiguos o proyectores a dispositivos modernos con salida DisplayPort."
     },
     {
         "source":  "PlanetGroupCR",
@@ -21,7 +22,8 @@
         "code":  "AMAAU0015UM",
         "brand":  "LENOVO",
         "priceCRC":  4104.88,
-        "sourceUrl":  "https://planetgroupcr.com/index.php?item_id=33714"
+        "sourceUrl":  "https://planetgroupcr.com/index.php?item_id=33714",
+        "description":  "Auriculares manos libres Lenovo G20A con diadema ajustable y almohadillas acolchadas. Micrófono omnidireccional con cancelación de ruido. Control de volumen en línea. Conexión jack 3.5mm. Compatible con PC, laptops, smartphones y tablets. Ideal para llamadas VoIP, conferencias y gaming casual."
     },
     {
         "source":  "PlanetGroupCR",
@@ -33,7 +35,8 @@
         "code":  "AM194252840283UM",
         "brand":  "APPLE",
         "priceCRC":  94698.5,
-        "sourceUrl":  "https://planetgroupcr.com/index.php?item_id=28075"
+        "sourceUrl":  "https://planetgroupcr.com/index.php?item_id=28075",
+        "description":  "Apple Magic Track Pad original modelo MMMP3AM/A. Superficie Multi-Touch con soporte para gestos avanzados: deslizar, pellizcar, rotar y más. Conectividad Bluetooth e inalámbrica. Batería recargable integrada con hasta 1 mes de duración. Diseño de aluminio plateado. Compatible con Mac y PC."
     },
     {
         "source":  "PlanetGroupCR",

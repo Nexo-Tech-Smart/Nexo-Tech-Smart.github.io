@@ -1278,3 +1278,36 @@ body.no-scroll { overflow: hidden; }
 
 .modal-body .modal-price-dev .value.blue { color: #1565c0; }
 .modal-body .modal-price-dev .value.orange { color: #e65100; }
+
+/* Product description in modal */
+.btn-desc {
+    background: #555;
+    width: 100%;
+    text-align: center;
+    padding: 8px 14px;
+    font-size: 0.85rem;
+    border: none;
+    border-radius: 6px;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.btn-desc:hover { background: #777; }
+
+.modal-desc-wrapper { margin: 10px 0; }
+
+.modal-desc-content {
+    background: #f5f5f5;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 12px 14px;
+    font-size: 0.85rem;
+    line-height: 1.6;
+    color: #333;
+    max-height: 300px;
+    overflow-y: auto;
+    margin-top: 6px;
+}
+
+.modal-desc-content em.desc-na { color: #999; font-style: italic; }

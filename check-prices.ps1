@@ -71,9 +71,7 @@ Write-Host ""
 $results = @()
 $total = $products.Count
 $i = 0
-$changed = 0
 $errors = 0
-$same = 0
 $noUrl = 0
 
 $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
@@ -90,7 +88,7 @@ foreach ($product in $products) {
     $sourceUrl = $product.sourceUrl
     if ([string]::IsNullOrEmpty($sourceUrl)) {
         $noUrl++
-        $results += [PSCustomObject]@{ id=$product.id; name=$product.name; code=$product.code; category=$product.category; pgcrPrice=$null; ourCost=$product.price; ourPrice=$null; margin=0; status="no-url" }
+        $results += [PSCustomObject]@{ id=$product.id; name=$product.name; code=$product.code; category=$product.category; pgcrCost=$null; marketRefPrice=$null; storedCost=$product.price; newSellingPrice=$null; margin=0; status="no-url" }
         continue
     }
 
@@ -98,7 +96,7 @@ foreach ($product in $products) {
     $match = [regex]::Match($sourceUrl, 'item_id=(\d+)')
     if (!$match.Success) {
         $noUrl++
-        $results += [PSCustomObject]@{ id=$product.id; name=$product.name; code=$product.code; category=$product.category; pgcrPrice=$null; ourCost=$product.price; ourPrice=$null; margin=0; status="no-item-id" }
+        $results += [PSCustomObject]@{ id=$product.id; name=$product.name; code=$product.code; category=$product.category; pgcrCost=$null; marketRefPrice=$null; storedCost=$product.price; newSellingPrice=$null; margin=0; status="no-item-id" }
         continue
     }
     $itemId = $match.Groups[1].Value
@@ -143,7 +141,7 @@ foreach ($product in $products) {
         $errors++
         $results += [PSCustomObject]@{
             id=$product.id; name=$product.name; code=$product.code; category=$product.category;
-            pgcrPrice=$null; ourCost=$product.price; ourPrice=$null; margin=0; status="error"
+            pgcrCost=$null; marketRefPrice=$null; storedCost=$product.price; newSellingPrice=$null; margin=0; status="error"
         }
         Write-Host ("[{0}/{1}] {2}: ERROR - {3}" -f $i, $total, $name.Substring(0,[Math]::Min(40,$name.Length)).PadRight(42), $_.Exception.Message) -ForegroundColor Red
     }
@@ -156,13 +154,17 @@ $stopwatch.Stop()
 Write-Progress -Activity "Checking prices" -Completed
 Write-Host ""
 
-# Summary
+$ok = ($results | Where-Object { $_.status -eq "ok" }).Count
+$changed = ($results | Where-Object { $_.status -eq "ok" -and $_.pgcrCost -ne $_.storedCost }).Count
+$same = $ok - $changed
+
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "  RESULTS" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ("Total checked:   {0}" -f $results.Count)
-Write-Host ("Changed:         {0}" -f $changed) -ForegroundColor Yellow
-Write-Host ("Same:            {0}" -f $same) -ForegroundColor Green
+Write-Host ("OK:              {0}" -f $ok) -ForegroundColor Green
+Write-Host ("  - Cost changed:{0}" -f $changed) -ForegroundColor Yellow
+Write-Host ("  - Same cost:   {0}" -f $same) -ForegroundColor Green
 Write-Host ("Errors:          {0}" -f $errors) -ForegroundColor Red
 Write-Host ("No source URL:   {0}" -f $noUrl)
 Write-Host ("Time elapsed:    {0}" -f $stopwatch.Elapsed.ToString("hh\:mm\:ss"))
@@ -172,14 +174,6 @@ Write-Host ""
 $reportPath = Join-Path $PSScriptRoot "price-report.csv"
 $results | Export-Csv -Path $reportPath -NoTypeInformation -Encoding UTF8
 Write-Host ("Report exported: {0}" -f $reportPath) -ForegroundColor Cyan
-
-# Show changed products
-$changedItems = $results | Where-Object { $_.status -eq "changed" }
-if ($changedItems.Count -gt 0) {
-    Write-Host ""
-    Write-Host "PRODUCTS WITH PRICE CHANGES:" -ForegroundColor Yellow
-    $changedItems | Format-Table id, @{N="Name";E={$_.name.Substring(0,[Math]::Min(40,$_.name.Length))}}, pgcrPrice, ourCost, ourPrice, margin -AutoSize
-}
 
 # Update products.json if requested
 $changedItems = $results | Where-Object { $_.status -eq "ok" -and $_.pgcrCost -ne $_.storedCost }

@@ -183,6 +183,12 @@ function openModal(id) {
                 + (pi ? '<p><span class="label">M&eacute;todo:</span><span class="value blue">' + pi.method + '</span></p>' : '')
             + '</div>'
             : '<div class="modal-price">' + formatPrice(sell) + '</div>')
+        + '<div class="modal-desc-wrapper">'
+        + '<button class="btn-sm btn-desc" onclick="toggleDesc(this)">&#128196; Especificaciones</button>'
+        + '<div class="modal-desc-content" style="display:none">'
+        + (p.description ? p.description : '<em class="desc-na">No hay especificaciones disponibles</em>')
+        + '</div>'
+        + '</div>'
         + (isDevMode && p.sourceUrl
             ? '<a href="' + p.sourceUrl + '" target="_blank" class="btn-sm btn-source" style="display:inline-block;text-decoration:none;margin-bottom:10px;background:#28a745">&#128279; Abrir en PlanetGroupCR</a><br>'
             : '')
@@ -194,6 +200,14 @@ function openModal(id) {
 
 function closeModal() {
     document.getElementById('productModal').classList.remove('open');
+}
+
+function toggleDesc(btn) {
+    const content = btn.parentElement.querySelector('.modal-desc-content');
+    if (!content) return;
+    const isHidden = content.style.display === 'none';
+    content.style.display = isHidden ? 'block' : 'none';
+    btn.textContent = isHidden ? '&#128196; Ocultar especificaciones' : '&#128196; Especificaciones';
 }
 
 function addToCart(id) {
